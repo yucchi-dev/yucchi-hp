@@ -1,0 +1,1006 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#F4A7B9">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>妊活ノート 🌸</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --pink-50:#FFF0F5; --pink-100:#FFD6E8; --pink-200:#FFB3D1;
+      --pink-300:#FF85B3; --pink-400:#F4689A; --pink-500:#E84E7F;
+      --red-period:#E85050; --red-light:#FFE0E0; --orange-light:#FFF3E0;
+      --text-dark:#3D2B3D; --text-medium:#7A5C7A; --text-light:#B898B8;
+      --bg:#FFF5F8; --surface:#FFFFFF; --shadow:rgba(232,73,127,0.12);
+    }
+    *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+    body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text-dark);min-height:100dvh;max-width:480px;margin:0 auto;}
+
+    /* Header */
+    .app-header{background:linear-gradient(135deg,#F9C0CF,#E8799A);padding:14px 18px 12px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 3px 16px rgba(232,121,154,.28);position:sticky;top:0;z-index:100;}
+    .app-title{color:#fff;font-size:19px;font-weight:700;letter-spacing:.04em;}
+
+    /* Tab nav */
+    .tab-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;background:#fff;display:flex;border-top:1px solid var(--pink-100);box-shadow:0 -4px 20px rgba(232,121,154,.1);z-index:100;}
+    .tab-btn{flex:1;padding:8px 2px 12px;display:flex;flex-direction:column;align-items:center;gap:3px;background:none;border:none;cursor:pointer;color:var(--text-light);font-family:inherit;transition:color .2s;}
+    .tab-btn.active{color:var(--pink-400);}
+    .tab-icon{font-size:20px;}.tab-label{font-size:10px;font-weight:500;}
+
+    /* Content */
+    .main-content{padding-bottom:80px;}
+    .tab-panel{display:none;}.tab-panel.active{display:block;}
+
+    /* Month nav */
+    .month-nav{display:flex;align-items:center;justify-content:space-between;padding:14px 18px 6px;}
+    .month-nav-btn{background:var(--pink-100);border:none;border-radius:50%;width:36px;height:36px;font-size:18px;cursor:pointer;color:var(--pink-500);display:flex;align-items:center;justify-content:center;transition:background .2s;}
+    .month-nav-btn:active{background:var(--pink-200);}
+    .month-title{font-size:17px;font-weight:700;}
+
+    /* ── CALENDAR HEADER ──────────────────────── */
+    .cal-header-row{display:flex;flex-direction:column;padding:10px 12px 0;gap:8px;}
+    .cal-header-top{display:flex;align-items:center;justify-content:space-between;}
+    .cycle-toggle{display:flex;gap:6px;}
+    .cycle-tab{padding:6px 14px;border-radius:20px;border:1.5px solid var(--pink-200);background:#fff;font-size:12px;font-weight:700;font-family:inherit;cursor:pointer;color:var(--text-medium);transition:all .2s;white-space:nowrap;}
+    .cycle-tab.active{background:var(--text-dark);border-color:var(--text-dark);color:#fff;}
+
+    /* Cycle info box */
+    .cycle-info-box{margin:8px 12px 10px;background:#fff;border-radius:14px;padding:10px 14px;box-shadow:0 2px 10px var(--shadow);}
+    .cycle-info-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px 12px;}
+    .ci-item{display:flex;flex-direction:column;}
+    .ci-label{font-size:10px;color:var(--text-light);margin-bottom:1px;}
+    .ci-value{font-size:13px;font-weight:700;color:var(--text-dark);}
+    .ci-value.accent{color:var(--pink-500);}
+    .ci-value.pms-color{color:#9060C0;}
+    .cycle-hint{font-size:11px;color:var(--text-light);text-align:center;padding:4px 0;}
+
+    /* Calendar grid */
+    .dow-header{display:grid;grid-template-columns:repeat(7,1fr);padding:0 12px;margin-bottom:2px;}
+    .dow-label{text-align:center;font-size:11px;font-weight:600;color:var(--text-light);padding:3px 0;}
+    .dow-label:first-child{color:#FF7070;}.dow-label:last-child{color:#7090FF;}
+    .calendar-grid{padding:0 12px;}
+    .calendar-week{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:2px;}
+
+    /* Day cells – ルナルナ style (taller) */
+    .day-cell{aspect-ratio:3/4;border-radius:6px;display:flex;flex-direction:column;cursor:pointer;position:relative;background:#fff;transition:transform .1s;overflow:hidden;}
+    .day-cell:active{transform:scale(.88);}
+    .day-cell.empty{background:transparent;cursor:default;pointer-events:none;}
+    .cell-top{display:flex;justify-content:space-between;align-items:flex-start;padding:3px 3px 0;}
+    .day-num{font-size:12px;font-weight:500;line-height:1.2;}
+    .day-cell.sun .day-num{color:#FF5555;}.day-cell.sat .day-num{color:#5572EE;}
+    .heart-mark{font-size:11px;color:#FF5580;line-height:1;}
+    .day-icon-area{flex:1;display:flex;align-items:center;justify-content:center;}
+    .day-inds{display:flex;justify-content:center;gap:1px;font-size:6px;padding-bottom:2px;min-height:10px;}
+
+    /* Today ring */
+    .day-cell.today{box-shadow:inset 0 0 0 2px var(--pink-400);}
+    .day-cell.today .day-num{color:var(--pink-500);font-weight:700;}
+
+    /* Phase backgrounds */
+    .ph-period{background:#FFE8EE;}
+    .ph-fertile{background:#FFFAEC;}
+    .ph-ovulation{background:#FFF5D0;}
+    .ph-pms{background:#F3EEFF;}
+    .ph-predicted{background:#FFE8EE;box-shadow:inset 0 0 0 1.5px #FFCCE0;}
+
+    /* Moon shape (CSS crescent) */
+    .moon-shape{width:24px;height:24px;position:relative;flex-shrink:0;}
+    .moon-shape::before{content:'';position:absolute;inset:0;border-radius:50%;background:#FF85A8;}
+    .moon-shape::after{content:'';position:absolute;top:-1px;left:4px;width:21px;height:21px;border-radius:50%;background:#FFE8EE;}
+    /* Lighter moon for predicted period */
+    .moon-pred::before{background:#FFAEC8;}
+    .moon-pred::after{background:#FFE8EE;}
+
+    /* Ovulation circle */
+    .ov-shape{width:22px;height:22px;border:2.5px solid #F4A830;border-radius:50%;flex-shrink:0;}
+
+    /* Legend */
+    .legend{display:flex;flex-wrap:wrap;gap:6px;padding:8px 12px 12px;}
+    .legend-item{display:flex;align-items:center;gap:4px;font-size:10px;color:var(--text-medium);}
+    .legend-dot{width:12px;height:12px;border-radius:3px;flex-shrink:0;}
+    .legend-moon{width:12px;height:12px;position:relative;flex-shrink:0;}
+    .legend-moon::before{content:'';position:absolute;inset:0;border-radius:50%;background:#FF85A8;}
+    .legend-moon::after{content:'';position:absolute;top:-1px;left:3px;width:10px;height:10px;border-radius:50%;background:#FFE8EE;}
+
+    /* Cards / Forms */
+    .section-pad{padding:14px;}
+    .card{background:#fff;border-radius:16px;padding:14px;box-shadow:0 2px 14px var(--shadow);margin-bottom:14px;}
+    .card-title{font-size:13px;font-weight:700;color:var(--text-medium);margin-bottom:10px;}
+    .form-row{display:flex;gap:8px;align-items:flex-end;}
+    .form-group{flex:1;}
+    .form-label{display:block;font-size:11px;color:var(--text-medium);margin-bottom:4px;font-weight:500;}
+    .form-input{width:100%;border:1.5px solid var(--pink-100);border-radius:10px;padding:9px 11px;font-size:14px;font-family:inherit;color:var(--text-dark);background:var(--bg);outline:none;transition:border-color .2s;}
+    .form-input:focus{border-color:var(--pink-300);}
+    .btn-primary{background:linear-gradient(135deg,var(--pink-400),var(--pink-500));color:#fff;border:none;border-radius:10px;padding:10px 18px;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;white-space:nowrap;transition:opacity .2s;}
+    .btn-primary:active{opacity:.82;}
+    .btn-block{width:100%;padding:12px;font-size:14px;border-radius:12px;}
+
+    /* Temperature chart */
+    .chart-nav-row{display:flex;justify-content:center;align-items:center;gap:12px;margin-bottom:10px;}
+    .chart-nav-btn{background:var(--pink-100);border:none;border-radius:50%;width:30px;height:30px;font-size:16px;cursor:pointer;color:var(--pink-500);display:flex;align-items:center;justify-content:center;}
+    .chart-nav-btn:active{background:var(--pink-200);}
+    .chart-nav-label{font-size:14px;font-weight:700;}
+    .temp-list{display:flex;flex-direction:column;gap:8px;}
+    .temp-entry{background:#fff;border-radius:12px;padding:11px 14px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 1px 8px var(--shadow);}
+    .temp-entry-date{font-size:13px;color:var(--text-medium);}
+    .temp-entry-val{font-size:20px;font-weight:700;color:var(--pink-500);}
+    .temp-entry-val span{font-size:12px;font-weight:400;color:var(--text-light);}
+    .del-btn{background:none;border:none;font-size:16px;color:var(--text-light);cursor:pointer;padding:4px;}
+    .empty-state{text-align:center;padding:36px 20px;color:var(--text-light);}
+    .empty-icon{font-size:44px;margin-bottom:10px;}
+    .empty-txt{font-size:13px;}
+
+    /* ── FOOD TAB ──────────────────────────────── */
+    .food-date-nav{display:flex;align-items:center;justify-content:space-between;padding:14px 18px 6px;}
+    .food-date-label{font-size:16px;font-weight:700;text-align:center;}
+    .food-today-badge{font-size:10px;background:var(--pink-400);color:#fff;padding:2px 7px;border-radius:10px;margin-left:6px;vertical-align:middle;}
+
+    /* Nutrition bars */
+    .nutr-row{display:flex;align-items:center;gap:6px;margin-bottom:9px;}
+    .nutr-icon{font-size:15px;width:22px;text-align:center;}
+    .nutr-name{font-size:11px;color:var(--text-medium);width:44px;flex-shrink:0;}
+    .nutr-bar-wrap{flex:1;height:8px;background:var(--bg);border-radius:4px;overflow:hidden;}
+    .nutr-bar{height:100%;border-radius:4px;transition:width .6s ease;}
+    .nutr-val{font-size:11px;font-weight:700;color:var(--text-dark);min-width:44px;text-align:right;line-height:1.2;}
+    .nutr-unit{font-size:9px;color:var(--text-light);font-weight:400;}
+    .nutr-status{font-size:13px;width:18px;text-align:center;}
+
+    /* Deficiency alert */
+    .def-alert{border-radius:10px;padding:9px 12px;margin-bottom:12px;font-size:12px;display:flex;align-items:flex-start;gap:6px;line-height:1.5;}
+    .def-alert.warn{background:#FFF3E0;color:#B06010;}
+    .def-alert.good{background:#EEFAF4;color:#30A060;}
+    .def-alert.none{background:var(--bg);color:var(--text-light);}
+
+    /* Meal cards */
+    .meal-card{background:#fff;border-radius:14px;padding:12px 14px;margin-bottom:10px;box-shadow:0 2px 10px var(--shadow);}
+    .meal-card-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;}
+    .meal-time-badge{font-size:10px;font-weight:700;color:var(--pink-400);background:var(--pink-50);padding:3px 9px;border-radius:10px;}
+    .meal-card-name{font-size:14px;font-weight:600;margin-bottom:8px;}
+    .meal-nutr-chips{display:flex;flex-wrap:wrap;gap:4px;}
+    .meal-nutr-chip{font-size:10px;padding:2px 7px;border-radius:6px;}
+    .meal-nutr-chip.ok{color:#30A060;background:#EEFAF4;}
+    .meal-nutr-chip.low{color:#E06050;background:#FFF0EE;}
+    .meal-nutr-chip.mid{color:#A07030;background:#FFF8EE;}
+    .meal-nutr-chip.nodata{color:var(--text-light);background:var(--bg);}
+    .meal-comment{font-size:11px;color:var(--pink-500);font-style:italic;margin-top:6px;line-height:1.5;}
+
+    /* FAB */
+    .add-fab{position:fixed;bottom:78px;right:18px;width:54px;height:54px;border-radius:50%;background:linear-gradient(135deg,var(--pink-400),var(--pink-500));border:none;font-size:26px;color:#fff;box-shadow:0 4px 18px rgba(232,73,127,.4);cursor:pointer;z-index:50;display:none;align-items:center;justify-content:center;transition:transform .15s;}
+    .add-fab:active{transform:scale(.9);}
+    .add-fab.show{display:flex;}
+
+    /* Settings */
+    .settings-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;}
+    .settings-row+.settings-row{border-top:1px solid var(--bg);}
+    .settings-label{font-size:13px;color:var(--text-medium);}
+    .settings-input{width:76px;border:1.5px solid var(--pink-100);border-radius:8px;padding:7px 10px;font-size:14px;text-align:center;font-family:inherit;color:var(--text-dark);background:var(--bg);outline:none;}
+    .settings-input:focus{border-color:var(--pink-300);}
+    .settings-input-wide{width:100%;margin-top:8px;}
+    .info-text{font-size:12px;color:var(--text-light);line-height:1.8;}
+    .api-key-wrap{position:relative;}
+    .api-key-input{font-family:monospace;font-size:12px;letter-spacing:.03em;}
+    .api-key-toggle{position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:16px;color:var(--text-light);}
+
+    /* Modal */
+    .modal-overlay{position:fixed;inset:0;background:rgba(61,43,61,0);z-index:200;display:flex;align-items:flex-end;justify-content:center;pointer-events:none;transition:background .3s;}
+    .modal-overlay.open{background:rgba(61,43,61,.48);pointer-events:all;}
+    .modal{background:#fff;border-radius:22px 22px 0 0;width:100%;max-width:480px;max-height:88dvh;overflow-y:auto;padding-bottom:32px;transform:translateY(100%);transition:transform .35s cubic-bezier(.34,1.08,.64,1);}
+    .modal-overlay.open .modal{transform:translateY(0);}
+    .modal-handle{width:38px;height:4px;background:var(--pink-100);border-radius:2px;margin:12px auto 6px;}
+    .modal-header{padding:6px 18px 14px;display:flex;justify-content:space-between;align-items:center;}
+    .modal-date{font-size:18px;font-weight:700;}
+    .modal-close{background:var(--bg);border:none;border-radius:50%;width:32px;height:32px;font-size:15px;cursor:pointer;color:var(--text-medium);}
+    .modal-body{padding:0 18px;}
+    .modal-section{margin-bottom:20px;}
+    .modal-section-title{font-size:11px;font-weight:700;color:var(--text-light);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;}
+
+    /* Period toggle */
+    .period-toggle{display:flex;gap:8px;}
+    .period-btn{flex:1;padding:12px;border-radius:12px;border:2px solid var(--pink-100);background:#fff;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;color:var(--text-medium);transition:all .2s;}
+    .period-btn.active-yes{border-color:var(--red-period);background:var(--red-light);color:#C03030;}
+    .period-btn.active-no{border-color:var(--pink-100);background:var(--bg);color:var(--text-medium);}
+
+    /* Symptom chips */
+    .symptom-chips{display:flex;flex-wrap:wrap;gap:8px;}
+    .symptom-chip{padding:7px 13px;border-radius:20px;border:1.5px solid var(--pink-100);background:#fff;font-size:12px;font-family:inherit;cursor:pointer;color:var(--text-medium);transition:all .2s;}
+    .symptom-chip.on{border-color:var(--pink-400);background:var(--pink-50);color:var(--pink-500);font-weight:600;}
+
+    /* Temp modal */
+    .temp-modal-row{display:flex;align-items:center;gap:8px;}
+    .temp-modal-row input{width:110px;border:1.5px solid var(--pink-100);border-radius:10px;padding:10px 12px;font-size:18px;font-family:inherit;color:var(--text-dark);background:var(--bg);outline:none;transition:border-color .2s;}
+    .temp-modal-row input:focus{border-color:var(--pink-300);}
+    .temp-unit{font-size:15px;color:var(--text-medium);}
+    .memo-area{width:100%;min-height:80px;border:1.5px solid var(--pink-100);border-radius:12px;padding:11px;font-size:14px;font-family:inherit;color:var(--text-dark);background:var(--bg);resize:none;outline:none;transition:border-color .2s;}
+    .memo-area:focus{border-color:var(--pink-300);}
+    .modal-save-btn{width:100%;padding:14px;margin-top:8px;background:linear-gradient(135deg,#F9C0CF,#E8799A);color:#fff;border:none;border-radius:14px;font-size:16px;font-weight:700;font-family:inherit;cursor:pointer;transition:opacity .2s;}
+    .modal-save-btn:active{opacity:.82;}
+
+    /* Meal modal specifics */
+    .meal-time-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;}
+    .meal-time-btn{padding:10px 4px;border-radius:12px;border:2px solid var(--pink-100);background:#fff;font-size:11px;font-weight:600;font-family:inherit;cursor:pointer;color:var(--text-medium);text-align:center;transition:all .2s;line-height:1.4;}
+    .meal-time-btn.active{border-color:var(--pink-400);background:var(--pink-50);color:var(--pink-500);}
+    .mode-tabs{display:flex;gap:8px;margin-bottom:12px;}
+    .mode-tab{flex:1;padding:10px;border-radius:10px;border:1.5px solid var(--pink-100);background:#fff;font-size:12px;font-weight:600;font-family:inherit;cursor:pointer;color:var(--text-medium);transition:all .2s;}
+    .mode-tab.active{border-color:var(--pink-400);background:var(--pink-50);color:var(--pink-500);}
+    .photo-preview-img{width:100%;max-height:200px;object-fit:cover;border-radius:12px;margin-bottom:8px;}
+    .analyzing-state{text-align:center;padding:20px;color:var(--text-medium);}
+    .spinner{width:28px;height:28px;border:3px solid var(--pink-100);border-top-color:var(--pink-400);border-radius:50%;animation:spin .7s linear infinite;display:inline-block;margin-bottom:10px;}
+    @keyframes spin{to{transform:rotate(360deg);}}
+    .ai-result-box{background:var(--pink-50);border-radius:12px;padding:12px;margin-bottom:12px;}
+    .ai-result-name{font-size:14px;font-weight:700;margin-bottom:10px;color:var(--text-dark);}
+    .ai-comment{font-size:11px;color:var(--pink-500);font-style:italic;line-height:1.6;margin-top:10px;padding-top:10px;border-top:1px solid var(--pink-100);}
+    .nutr-mini-row{display:flex;align-items:center;gap:5px;margin-bottom:6px;}
+    .nutr-mini-bar-wrap{flex:1;height:6px;background:rgba(255,255,255,.6);border-radius:3px;overflow:hidden;}
+    .nutr-mini-bar{height:100%;border-radius:3px;}
+
+    /* Toast */
+    .toast{position:fixed;bottom:88px;left:50%;transform:translateX(-50%);background:var(--text-dark);color:#fff;padding:9px 20px;border-radius:20px;font-size:13px;z-index:300;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap;}
+    .toast.show{opacity:1;}
+    ::-webkit-scrollbar{width:3px;}::-webkit-scrollbar-thumb{background:var(--pink-200);border-radius:2px;}
+  </style>
+</head>
+<body>
+
+<header class="app-header">
+  <div class="app-title">🌸 妊活ノート</div>
+</header>
+
+<main class="main-content">
+
+  <!-- ── CALENDAR ──────────────────────────────── -->
+  <div id="tab-calendar" class="tab-panel active">
+    <div class="cal-header-row">
+      <div class="cal-header-top">
+        <button class="month-nav-btn" onclick="changeMonth(-1)">‹</button>
+        <div class="month-title" id="month-title"></div>
+        <button class="month-nav-btn" onclick="changeMonth(1)">›</button>
+      </div>
+      <div class="cycle-toggle">
+        <button class="cycle-tab active" id="cv-ninkyo" onclick="setCycleView('ninkyo')">妊娠可能性</button>
+        <button class="cycle-tab" id="cv-pms" onclick="setCycleView('pms')">PMS注意報</button>
+      </div>
+    </div>
+    <div id="cycle-info-box" class="cycle-info-box"></div>
+    <div class="dow-header">
+      <div class="dow-label">日</div><div class="dow-label">月</div><div class="dow-label">火</div>
+      <div class="dow-label">水</div><div class="dow-label">木</div><div class="dow-label">金</div>
+      <div class="dow-label">土</div>
+    </div>
+    <div id="calendar-grid" class="calendar-grid"></div>
+    <div class="legend">
+      <div class="legend-item"><div class="legend-moon"></div>生理日</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#FFFAEC;border:1px solid #E8D090;"></div>妊娠可能期間</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#FFF5D0;border:1.5px solid #F4A830;border-radius:50%;"></div>排卵予測</div>
+      <div class="legend-item"><span style="font-size:11px;color:#FF5580;">♥</span> 仲良しタイミング</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#F3EEFF;border:1px solid #C8A8E0;"></div>PMS期間</div>
+    </div>
+  </div>
+
+  <!-- ── FOOD ──────────────────────────────────── -->
+  <div id="tab-food" class="tab-panel">
+    <div class="food-date-nav">
+      <button class="month-nav-btn" onclick="changeFoodDate(-1)">‹</button>
+      <div id="food-date-label" class="food-date-label"></div>
+      <button class="month-nav-btn" onclick="changeFoodDate(1)">›</button>
+    </div>
+    <div class="section-pad" style="padding-top:4px;">
+      <div class="card">
+        <div class="card-title">📊 今日の栄養サマリー</div>
+        <div id="food-def-alert"></div>
+        <div id="food-nutr-bars"></div>
+      </div>
+      <div id="food-meal-list"></div>
+    </div>
+  </div>
+
+  <!-- ── TEMPERATURE ────────────────────────────── -->
+  <div id="tab-temp" class="tab-panel">
+    <div class="section-pad">
+      <div class="card">
+        <div class="card-title">🌡 体温を追加</div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">日付</label>
+            <input type="date" id="temp-date-input" class="form-input">
+          </div>
+          <div class="form-group" style="flex:.8">
+            <label class="form-label">体温（℃）</label>
+            <input type="number" id="temp-val-input" class="form-input" placeholder="36.50" step="0.01" min="35" max="40">
+          </div>
+          <button class="btn-primary" onclick="addTemperature()">追加</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="chart-nav-row">
+          <button class="chart-nav-btn" onclick="changeChartMonth(-1)">‹</button>
+          <div class="chart-nav-label" id="chart-month-label"></div>
+          <button class="chart-nav-btn" onclick="changeChartMonth(1)">›</button>
+        </div>
+        <svg id="temp-chart" width="100%" height="180"></svg>
+      </div>
+      <div id="temp-list"></div>
+    </div>
+  </div>
+
+  <!-- ── SETTINGS ───────────────────────────────── -->
+  <div id="tab-settings" class="tab-panel">
+    <div class="section-pad">
+      <div class="card">
+        <div class="card-title">⚙️ サイクル設定</div>
+        <div class="settings-row">
+          <div class="settings-label">生理周期（日）</div>
+          <input type="number" id="setting-cycle" class="settings-input" min="20" max="45" onchange="saveSettings()">
+        </div>
+        <div class="settings-row">
+          <div class="settings-label">生理期間（日）</div>
+          <input type="number" id="setting-period" class="settings-input" min="1" max="10" onchange="saveSettings()">
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">🤖 AI設定（栄養分析）</div>
+        <p class="info-text" style="margin-bottom:10px;">Claude APIキーを設定すると、食事の写真・テキストから栄養素を自動計算できます。キーはこの端末のみに保存されます。</p>
+        <div class="api-key-wrap">
+          <input type="password" id="setting-apikey" class="form-input api-key-input settings-input-wide" placeholder="sk-ant-..." onchange="saveSettings()">
+          <button class="api-key-toggle" onclick="toggleApiKeyVisibility()" id="api-key-eye">👁</button>
+        </div>
+        <div style="margin-top:8px;font-size:11px;color:var(--text-light);">
+          ※ APIキーは <a href="https://console.anthropic.com/" target="_blank" style="color:var(--pink-400);">console.anthropic.com</a> で取得できます
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">💾 データ管理</div>
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          <button class="btn-primary btn-block" style="background:linear-gradient(135deg,#80C8A0,#55A878);" onclick="exportData()">📤 エクスポート</button>
+          <button class="btn-primary btn-block" style="background:linear-gradient(135deg,#90B8E8,#5080C0);" onclick="importData()">📥 インポート</button>
+          <button class="btn-primary btn-block" style="background:linear-gradient(135deg,#E0A0A0,#C06060);" onclick="clearData()">🗑 全データ削除</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">🌸 このアプリについて</div>
+        <p class="info-text">生理周期・排卵予測・基礎体温・食事栄養管理をまとめて。データはこの端末のブラウザのみに保存されます。</p>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- Bottom nav -->
+<nav class="tab-nav">
+  <button class="tab-btn active" id="nav-calendar" onclick="switchTab('calendar')">
+    <span class="tab-icon">📅</span><span class="tab-label">カレンダー</span>
+  </button>
+  <button class="tab-btn" id="nav-food" onclick="switchTab('food')">
+    <span class="tab-icon">🍽️</span><span class="tab-label">食事</span>
+  </button>
+  <button class="tab-btn" id="nav-temp" onclick="switchTab('temp')">
+    <span class="tab-icon">🌡️</span><span class="tab-label">体温</span>
+  </button>
+  <button class="tab-btn" id="nav-settings" onclick="switchTab('settings')">
+    <span class="tab-icon">⚙️</span><span class="tab-label">設定</span>
+  </button>
+</nav>
+
+<!-- FAB (food tab) -->
+<button class="add-fab" id="add-fab" onclick="openMealModal()" aria-label="食事を追加">＋</button>
+
+<!-- Day modal -->
+<div id="modal-overlay" class="modal-overlay" onclick="handleOverlayClick(event)">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <div class="modal-date" id="modal-date-title"></div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-section">
+        <div class="modal-section-title">🩸 生理日</div>
+        <div class="period-toggle">
+          <button class="period-btn" id="period-yes-btn" onclick="setPeriod(true)">🩸 生理あり</button>
+          <button class="period-btn" id="period-no-btn" onclick="setPeriod(false)">なし</button>
+        </div>
+      </div>
+      <div class="modal-section">
+        <div class="modal-section-title">🌡 基礎体温</div>
+        <div class="temp-modal-row">
+          <input type="number" id="modal-temp" placeholder="36.50" step="0.01" min="35" max="40">
+          <span class="temp-unit">℃</span>
+        </div>
+      </div>
+      <div class="modal-section">
+        <div class="modal-section-title">💊 体調・症状</div>
+        <div class="symptom-chips" id="symptom-chips"></div>
+      </div>
+      <div class="modal-section">
+        <div class="modal-section-title">📝 メモ</div>
+        <textarea class="memo-area" id="modal-memo" placeholder="自由にメモ…"></textarea>
+      </div>
+      <button class="modal-save-btn" onclick="saveDay()">保存する 🌸</button>
+    </div>
+  </div>
+</div>
+
+<!-- Meal modal -->
+<div id="meal-overlay" class="modal-overlay" onclick="handleMealOverlayClick(event)">
+  <div class="modal" style="max-height:92dvh;">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <div class="modal-date" id="meal-modal-title">食事を追加</div>
+      <button class="modal-close" onclick="closeMealModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <!-- 時間帯 -->
+      <div class="modal-section">
+        <div class="modal-section-title">⏰ 時間帯</div>
+        <div class="meal-time-grid">
+          <button class="meal-time-btn active" data-t="breakfast" onclick="selectMealTime(this)">🌅<br>朝食</button>
+          <button class="meal-time-btn" data-t="lunch" onclick="selectMealTime(this)">🌤<br>昼食</button>
+          <button class="meal-time-btn" data-t="dinner" onclick="selectMealTime(this)">🌙<br>夕食</button>
+          <button class="meal-time-btn" data-t="snack" onclick="selectMealTime(this)">☕<br>間食</button>
+        </div>
+      </div>
+      <!-- 入力モード -->
+      <div class="modal-section">
+        <div class="modal-section-title">🍽 食事内容</div>
+        <div class="mode-tabs">
+          <button class="mode-tab active" id="mode-tab-text" onclick="switchMealMode('text')">✏️ テキスト入力</button>
+          <button class="mode-tab" id="mode-tab-photo" onclick="switchMealMode('photo')">📷 写真で分析</button>
+        </div>
+        <!-- TEXT -->
+        <div id="meal-text-section">
+          <input type="text" id="meal-text-input" class="form-input" placeholder="例: サーモン定食、ほうれん草炒め、卵焼き" style="margin-bottom:8px;">
+          <button class="btn-primary btn-block" id="meal-analyze-text-btn" onclick="analyzeMealText()">🔍 AIで栄養を分析する</button>
+          <div id="meal-no-api-hint" style="font-size:11px;color:var(--text-light);margin-top:6px;text-align:center;line-height:1.5;"></div>
+        </div>
+        <!-- PHOTO -->
+        <div id="meal-photo-section" style="display:none;">
+          <div id="meal-photo-preview"></div>
+          <button class="btn-primary btn-block" style="background:linear-gradient(135deg,#90B8E8,#5080C0);" onclick="document.getElementById('meal-photo-input').click()">📷 写真を選択 / カメラで撮影</button>
+          <input type="file" id="meal-photo-input" accept="image/*" capture="environment" style="display:none;" onchange="handlePhotoSelect(event)">
+          <button class="btn-primary btn-block" id="meal-analyze-photo-btn" onclick="analyzeMealPhoto()" style="display:none;margin-top:8px;">🔍 AIで栄養を分析する</button>
+        </div>
+      </div>
+      <!-- Analyzing -->
+      <div id="meal-analyzing" style="display:none;" class="analyzing-state">
+        <div class="spinner"></div>
+        <div style="font-size:13px;">AIが栄養を分析中...</div>
+      </div>
+      <!-- Result -->
+      <div id="meal-result" style="display:none;" class="modal-section">
+        <div class="modal-section-title">🌿 分析結果</div>
+        <div class="ai-result-box">
+          <div class="ai-result-name" id="meal-result-name"></div>
+          <div id="meal-result-bars"></div>
+          <div class="ai-comment" id="meal-result-comment"></div>
+        </div>
+      </div>
+      <button class="modal-save-btn" id="meal-save-btn" onclick="saveMeal()">保存する 🌸</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+/* ===== CONSTANTS ===== */
+const SYMPTOMS = ['🩹 腹痛','🤕 頭痛','😴 眠気','😤 イライラ','💧 おりもの多','🤢 吐き気','😰 むくみ','💕 性交あり','🌙 不眠','🍫 食欲増','🥶 冷え','💦 おりもの少'];
+const WEEKDAYS = ['日','月','火','水','木','金','土'];
+const MEAL_LABELS = { breakfast:'🌅 朝食', lunch:'🌤 昼食', dinner:'🌙 夕食', snack:'☕ 間食' };
+const MEAL_ORDER  = ['breakfast','lunch','dinner','snack'];
+
+const NUTRIENTS = [
+  { key:'folicAcid', name:'葉酸',    icon:'🌿', unit:'mcg', target:400,  dp:0 },
+  { key:'iron',      name:'鉄分',    icon:'🩸', unit:'mg',  target:10.5, dp:1 },
+  { key:'zinc',      name:'亜鉛',    icon:'💎', unit:'mg',  target:8,    dp:1 },
+  { key:'vitaminD',  name:'VitD',   icon:'☀️', unit:'mcg', target:8.5,  dp:1 },
+  { key:'calcium',   name:'Ca',     icon:'🦴', unit:'mg',  target:650,  dp:0 },
+  { key:'vitaminC',  name:'VitC',   icon:'🍊', unit:'mg',  target:100,  dp:0 },
+  { key:'protein',   name:'タンパク', icon:'🥚', unit:'g',   target:50,   dp:0 },
+];
+
+/* ===== DATA ===== */
+let appData = (() => {
+  try { const s = localStorage.getItem('ninkatsu_v2'); if(s) return JSON.parse(s); } catch(_) {}
+  return { periods:[], temperatures:{}, memos:{}, symptoms:{}, meals:{}, settings:{ cycleLength:28, periodLength:5, claudeApiKey:'' } };
+})();
+
+// migrate from v1
+(() => {
+  try {
+    const old = localStorage.getItem('ninkatsu_v1');
+    if (old && !localStorage.getItem('ninkatsu_v2')) {
+      const o = JSON.parse(old);
+      appData.periods = o.periods || [];
+      appData.temperatures = o.temperatures || {};
+      appData.memos = o.memos || {};
+      appData.symptoms = o.symptoms || {};
+      appData.settings.cycleLength = o.settings?.cycleLength || 28;
+      appData.settings.periodLength = o.settings?.periodLength || 5;
+      persist();
+    }
+  } catch(_) {}
+})();
+
+function persist() { localStorage.setItem('ninkatsu_v2', JSON.stringify(appData)); }
+
+/* ===== DATE UTILS ===== */
+function toStr(d) { return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function fromStr(s) { return new Date(s+'T00:00:00'); }
+function addDays(d,n) { const r=new Date(d); r.setDate(r.getDate()+n); return r; }
+function daysBetween(a,b) { return Math.round((b-a)/86400000); }
+function uid() { return Math.random().toString(36).slice(2,10); }
+
+/* ===== PERIOD ANALYSIS ===== */
+function getPeriodStarts() {
+  const sorted = [...appData.periods].sort();
+  if (!sorted.length) return [];
+  const starts = [sorted[0]];
+  for (let i=1;i<sorted.length;i++) if(daysBetween(fromStr(sorted[i-1]),fromStr(sorted[i]))>1) starts.push(sorted[i]);
+  return starts;
+}
+function getAvgCycle() {
+  const s=getPeriodStarts(); if(s.length<2) return appData.settings.cycleLength;
+  let t=0; for(let i=1;i<s.length;i++) t+=daysBetween(fromStr(s[i-1]),fromStr(s[i]));
+  return Math.round(t/(s.length-1));
+}
+function getPredictions() {
+  const starts=getPeriodStarts(); if(!starts.length) return null;
+  const last=fromStr(starts[starts.length-1]); const cycle=getAvgCycle();
+  const nextPeriod=addDays(last,cycle); const ovulation=addDays(nextPeriod,-14);
+  return { nextPeriod, ovulation, cycle, fertileStart:addDays(ovulation,-5), fertileEnd:addDays(ovulation,+1) };
+}
+
+/* ===== APP STATE ===== */
+let calViewDate   = new Date();
+let chartViewDate = new Date();
+let foodViewDate  = new Date();
+let cycleView     = 'ninkyo'; // 'ninkyo' | 'pms'
+let selDate = null, selSymptoms = new Set();
+let mealTime = 'breakfast', mealMode = 'text';
+let mealPhotoB64 = null, mealPhotoMime = null, mealResultData = null;
+
+/* ===== TAB SWITCHING ===== */
+function switchTab(name) {
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  document.getElementById('nav-'+name).classList.add('active');
+  document.getElementById('add-fab').classList.toggle('show', name==='food');
+  if(name==='calendar') renderCalendar();
+  if(name==='food')     renderFoodTab();
+  if(name==='temp')     renderTempTab();
+  if(name==='settings') loadSettings();
+}
+
+/* ===== CALENDAR ===== */
+function changeMonth(dir) { calViewDate.setDate(1); calViewDate.setMonth(calViewDate.getMonth()+dir); renderCalendar(); }
+
+function setCycleView(v) {
+  cycleView = v;
+  document.getElementById('cv-ninkyo').classList.toggle('active', v==='ninkyo');
+  document.getElementById('cv-pms').classList.toggle('active', v==='pms');
+  renderCalendar();
+}
+
+function fmtDate(d) {
+  return (d.getMonth()+1)+'月'+d.getDate()+'日';
+}
+
+function renderCalendar() {
+  const year=calViewDate.getFullYear(), month=calViewDate.getMonth();
+  const today=toStr(new Date()), pred=getPredictions();
+  document.getElementById('month-title').textContent=year+'年'+(month+1)+'月';
+
+  /* ── Info box ── */
+  const box=document.getElementById('cycle-info-box');
+  if (!pred) {
+    box.innerHTML='<div class="cycle-hint">生理日をタップして記録すると、排卵日・タイミングが予測されます 🌸</div>';
+  } else if (cycleView==='ninkyo') {
+    const ovD=pred.ovulation, fertS=pred.fertileStart, fertE=pred.fertileEnd;
+    const timingS=addDays(ovD,-1), timingE=addDays(ovD,1);
+    const dov=daysBetween(new Date(),ovD);
+    const ovLabel=dov>0?dov+'日後':dov===0?'今日！':'終了';
+    box.innerHTML=`<div class="cycle-info-grid">
+      <div class="ci-item"><span class="ci-label">推定周期</span><span class="ci-value">${pred.cycle}日</span></div>
+      <div class="ci-item"><span class="ci-label">排卵予測日</span><span class="ci-value accent">${fmtDate(ovD)}（${ovLabel}）</span></div>
+      <div class="ci-item"><span class="ci-label">妊娠可能期間</span><span class="ci-value">${fmtDate(fertS)}〜${fmtDate(fertE)}</span></div>
+      <div class="ci-item"><span class="ci-label">♥ 仲良しタイミング</span><span class="ci-value accent">${fmtDate(timingS)}〜${fmtDate(timingE)}</span></div>
+    </div>`;
+  } else {
+    const pmsS=addDays(pred.nextPeriod,-7), pmsE=addDays(pred.nextPeriod,-1);
+    const dn=daysBetween(new Date(),pred.nextPeriod);
+    const nextLabel=dn>0?dn+'日後':dn===0?'今日':Math.abs(dn)+'日前';
+    box.innerHTML=`<div class="cycle-info-grid">
+      <div class="ci-item"><span class="ci-label">次回生理予測</span><span class="ci-value pms-color">${fmtDate(pred.nextPeriod)}（${nextLabel}）</span></div>
+      <div class="ci-item"><span class="ci-label">PMS注意期間</span><span class="ci-value pms-color">${fmtDate(pmsS)}〜${fmtDate(pmsE)}</span></div>
+    </div>`;
+  }
+
+  /* ── Grid ── */
+  const firstDow=new Date(year,month,1).getDay(), daysInMonth=new Date(year,month+1,0).getDate();
+  let html='', day=1-firstDow;
+  while(day<=daysInMonth) {
+    html+='<div class="calendar-week">';
+    for(let dow=0;dow<7;dow++,day++) {
+      if(day<1||day>daysInMonth){html+='<div class="day-cell empty"></div>';continue;}
+      const ds=year+'-'+String(month+1).padStart(2,'0')+'-'+String(day).padStart(2,'0');
+      const d=fromStr(ds);
+      const isPeriod=appData.periods.includes(ds);
+      const isToday=ds===today;
+
+      // Phase detection
+      let phase='', isOv=false, isTiming=false, isPMS=false, isPredPeriod=false;
+      if (pred) {
+        const predEnd=addDays(pred.nextPeriod, appData.settings.periodLength-1);
+        isPredPeriod = !isPeriod && d>=pred.nextPeriod && d<=predEnd;
+        isOv   = !isPeriod && toStr(pred.ovulation)===ds;
+        isTiming = !isPeriod && d>=addDays(pred.ovulation,-1) && d<=addDays(pred.ovulation,1);
+        const isFert = !isPeriod && d>=pred.fertileStart && d<=pred.fertileEnd;
+        isPMS  = !isPeriod && !isPredPeriod && d>=addDays(pred.nextPeriod,-7) && d<pred.nextPeriod;
+
+        if      (isPeriod)     phase='ph-period';
+        else if (isPredPeriod) phase='ph-predicted';
+        else if (isOv)         phase='ph-ovulation';
+        else if (isFert)       phase='ph-fertile';
+        else if (isPMS)        phase='ph-pms';
+      } else if (isPeriod) {
+        phase='ph-period';
+      }
+
+      const numCol = isPeriod?'#C03030': isToday?'var(--pink-500)': dow===0?'#FF5555': dow===6?'#5572EE':'var(--text-dark)';
+      const numW   = (isPeriod||isToday)?'700':'500';
+      const todayRing = isToday?'box-shadow:inset 0 0 0 2px var(--pink-400);':'';
+      const hasTemp=appData.temperatures[ds]!=null;
+      const hasMemo=!!(appData.memos[ds]||(appData.symptoms[ds]&&appData.symptoms[ds].length));
+      const hasMeal=!!(appData.meals[ds]&&appData.meals[ds].length);
+
+      // Icon in center
+      let icon='';
+      if      (isPeriod)     icon='<div class="moon-shape"></div>';
+      else if (isPredPeriod) icon='<div class="moon-shape moon-pred"></div>';
+      else if (isOv)         icon='<div class="ov-shape"></div>';
+
+      html+=`<div class="day-cell ${phase}" style="${todayRing}" onclick="openDayModal('${ds}')">
+        <div class="cell-top">
+          <span class="day-num" style="color:${numCol};font-weight:${numW};">${day}</span>
+          ${isTiming&&!isPeriod?'<span class="heart-mark">♥</span>':''}
+        </div>
+        <div class="day-icon-area">${icon}</div>
+        <div class="day-inds">${hasTemp?'🌡':''}${hasMemo?'📝':''}${hasMeal?'🍽':''}</div>
+      </div>`;
+    }
+    html+='</div>';
+  }
+  document.getElementById('calendar-grid').innerHTML=html;
+}
+
+/* ===== DAY MODAL ===== */
+function openDayModal(ds) {
+  selDate=ds; const d=fromStr(ds);
+  document.getElementById('modal-date-title').textContent=(d.getMonth()+1)+'月'+d.getDate()+'日（'+WEEKDAYS[d.getDay()]+'）';
+  updatePeriodBtns(appData.periods.includes(ds));
+  document.getElementById('modal-temp').value=appData.temperatures[ds]?appData.temperatures[ds].toFixed(2):'';
+  selSymptoms=new Set(appData.symptoms[ds]||[]);
+  renderSymptomChips();
+  document.getElementById('modal-memo').value=appData.memos[ds]||'';
+  document.getElementById('modal-overlay').classList.add('open');
+  document.body.style.overflow='hidden';
+}
+function closeModal() { document.getElementById('modal-overlay').classList.remove('open'); document.body.style.overflow=''; selDate=null; }
+function handleOverlayClick(e) { if(e.target===document.getElementById('modal-overlay')) closeModal(); }
+function setPeriod(has) {
+  if(!selDate) return;
+  if(has){if(!appData.periods.includes(selDate))appData.periods.push(selDate);}
+  else{appData.periods=appData.periods.filter(d=>d!==selDate);}
+  updatePeriodBtns(has);
+}
+function updatePeriodBtns(ip) {
+  document.getElementById('period-yes-btn').className='period-btn'+(ip?' active-yes':'');
+  document.getElementById('period-no-btn').className='period-btn'+(!ip?' active-no':'');
+}
+function renderSymptomChips() {
+  document.getElementById('symptom-chips').innerHTML=SYMPTOMS.map(s=>`<button class="symptom-chip${selSymptoms.has(s)?' on':''}" onclick="toggleSym('${s}')">${s}</button>`).join('');
+}
+function toggleSym(s) { selSymptoms.has(s)?selSymptoms.delete(s):selSymptoms.add(s); renderSymptomChips(); }
+function saveDay() {
+  if(!selDate) return;
+  const tv=parseFloat(document.getElementById('modal-temp').value);
+  if(!isNaN(tv)&&tv>=35&&tv<=40) appData.temperatures[selDate]=tv; else delete appData.temperatures[selDate];
+  if(selSymptoms.size) appData.symptoms[selDate]=[...selSymptoms]; else delete appData.symptoms[selDate];
+  const memo=document.getElementById('modal-memo').value.trim();
+  if(memo) appData.memos[selDate]=memo; else delete appData.memos[selDate];
+  persist(); renderCalendar(); showToast('保存しました 🌸'); closeModal();
+}
+
+/* ===== FOOD TAB ===== */
+function changeFoodDate(dir) { foodViewDate=addDays(foodViewDate,dir); renderFoodTab(); }
+
+function getDailyTotals(ds) {
+  const meals=appData.meals[ds]||[]; const t={};
+  NUTRIENTS.forEach(n=>t[n.key]=0);
+  meals.forEach(m=>{ if(m.nutrients) NUTRIENTS.forEach(n=>t[n.key]=(t[n.key]||0)+(m.nutrients[n.key]||0)); });
+  return t;
+}
+
+function renderFoodTab() {
+  const ds=toStr(foodViewDate), isToday=ds===toStr(new Date()), d=fromStr(ds);
+  const label=(d.getMonth()+1)+'月'+d.getDate()+'日（'+WEEKDAYS[d.getDay()]+'）'+(isToday?'<span class="food-today-badge">今日</span>':'');
+  document.getElementById('food-date-label').innerHTML=label;
+
+  const totals=getDailyTotals(ds);
+  const hasAnyMealData=(appData.meals[ds]||[]).some(m=>m.nutrients);
+
+  // Deficiency alert
+  const defEl=document.getElementById('food-def-alert');
+  if(!hasAnyMealData) {
+    defEl.innerHTML='<div class="def-alert none">食事を記録すると栄養バランスが表示されます。</div>';
+  } else {
+    const lacking=NUTRIENTS.filter(n=>(totals[n.key]/n.target)<0.5).map(n=>n.name);
+    const close=NUTRIENTS.filter(n=>{ const r=totals[n.key]/n.target; return r>=0.5&&r<0.8; }).map(n=>n.name);
+    if(lacking.length) defEl.innerHTML=`<div class="def-alert warn">⚠️ 不足気味: ${lacking.join('・')}</div>`;
+    else if(close.length) defEl.innerHTML=`<div class="def-alert warn" style="background:#FFFCE0;color:#907020;">👀 もう少し: ${close.join('・')}</div>`;
+    else defEl.innerHTML='<div class="def-alert good">✨ 今日の栄養バランスは良好です！</div>';
+  }
+
+  // Nutrition bars
+  document.getElementById('food-nutr-bars').innerHTML=NUTRIENTS.map(n=>{
+    const got=totals[n.key], pct=Math.min(100,Math.round(got/n.target*100));
+    const color=pct>=80?'#60C880':pct>=50?'#F0B040':'#F07080';
+    const status=pct>=100?'✅':pct>=80?'🟢':pct>=50?'🟡':'🔴';
+    return `<div class="nutr-row">
+      <span class="nutr-icon">${n.icon}</span>
+      <span class="nutr-name">${n.name}</span>
+      <div class="nutr-bar-wrap"><div class="nutr-bar" style="width:${pct}%;background:${color};"></div></div>
+      <span class="nutr-val">${got.toFixed(n.dp)}<span class="nutr-unit">${n.unit}</span></span>
+      <span class="nutr-status">${hasAnyMealData?status:''}</span>
+    </div>`;
+  }).join('');
+
+  // Meal list
+  const meals=(appData.meals[ds]||[]).slice().sort((a,b)=>MEAL_ORDER.indexOf(a.time)-MEAL_ORDER.indexOf(b.time));
+  const listEl=document.getElementById('food-meal-list');
+  if(!meals.length) {
+    listEl.innerHTML='<div class="empty-state"><div class="empty-icon">🍽️</div><div class="empty-txt">食事を記録してみましょう</div></div>';
+    return;
+  }
+  listEl.innerHTML=meals.map(m=>{
+    const chips=m.nutrients ? NUTRIENTS.map(n=>{
+      const pct=m.nutrients[n.key]/n.target*100;
+      const cls=pct>=15?'ok':pct>=7?'mid':'low';
+      return `<span class="meal-nutr-chip ${cls}">${n.icon} ${m.nutrients[n.key].toFixed(n.dp)}${n.unit}</span>`;
+    }).join('') : '<span class="meal-nutr-chip nodata">栄養データなし</span>';
+    return `<div class="meal-card">
+      <div class="meal-card-top">
+        <span class="meal-time-badge">${MEAL_LABELS[m.time]||m.time}</span>
+        <button class="del-btn" onclick="deleteMeal('${ds}','${m.id}')">🗑</button>
+      </div>
+      <div class="meal-card-name">${m.name||'（名称なし）'}</div>
+      <div class="meal-nutr-chips">${chips}</div>
+      ${m.comment?`<div class="meal-comment">${m.comment}</div>`:''}
+    </div>`;
+  }).join('');
+}
+
+function deleteMeal(ds, id) {
+  if(!appData.meals[ds]) return;
+  appData.meals[ds]=appData.meals[ds].filter(m=>m.id!==id);
+  if(!appData.meals[ds].length) delete appData.meals[ds];
+  persist(); renderFoodTab(); renderCalendar(); showToast('削除しました');
+}
+
+/* ===== MEAL MODAL ===== */
+function openMealModal() {
+  mealTime='breakfast'; mealMode='text'; mealPhotoB64=null; mealPhotoMime=null; mealResultData=null;
+  document.querySelectorAll('.meal-time-btn').forEach(b=>b.classList.toggle('active',b.dataset.t==='breakfast'));
+  document.getElementById('meal-text-input').value='';
+  document.getElementById('meal-photo-preview').innerHTML='';
+  document.getElementById('meal-analyze-photo-btn').style.display='none';
+  document.getElementById('meal-photo-input').value='';
+  document.getElementById('meal-result').style.display='none';
+  document.getElementById('meal-analyzing').style.display='none';
+  document.getElementById('meal-modal-title').textContent=toStr(foodViewDate)===toStr(new Date())?'今日の食事を追加':(()=>{const d=foodViewDate;return(d.getMonth()+1)+'月'+d.getDate()+'日の食事を追加';})();
+  switchMealMode('text');
+  updateMealApiHint();
+  document.getElementById('meal-overlay').classList.add('open');
+  document.body.style.overflow='hidden';
+}
+function closeMealModal() { document.getElementById('meal-overlay').classList.remove('open'); document.body.style.overflow=''; }
+function handleMealOverlayClick(e) { if(e.target===document.getElementById('meal-overlay')) closeMealModal(); }
+function selectMealTime(btn) { mealTime=btn.dataset.t; document.querySelectorAll('.meal-time-btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); }
+function switchMealMode(mode) {
+  mealMode=mode;
+  document.getElementById('mode-tab-text').classList.toggle('active',mode==='text');
+  document.getElementById('mode-tab-photo').classList.toggle('active',mode==='photo');
+  document.getElementById('meal-text-section').style.display=mode==='text'?'':'none';
+  document.getElementById('meal-photo-section').style.display=mode==='photo'?'':'none';
+  document.getElementById('meal-result').style.display='none';
+  mealResultData=null;
+}
+function updateMealApiHint() {
+  const hasKey=!!(appData.settings.claudeApiKey||'').trim();
+  const hint=document.getElementById('meal-no-api-hint');
+  hint.textContent=hasKey?'':'※ 設定画面でAPIキーを設定するとAIが栄養素を自動計算します';
+  document.getElementById('meal-analyze-text-btn').textContent=hasKey?'🔍 AIで栄養を分析する':'💾 名前だけ保存する';
+}
+
+async function handlePhotoSelect(e) {
+  const file=e.target.files[0]; if(!file) return;
+  mealPhotoMime=file.type;
+  mealPhotoB64=await new Promise(res=>{ const r=new FileReader(); r.onload=ev=>res(ev.target.result.split(',')[1]); r.readAsDataURL(file); });
+  document.getElementById('meal-photo-preview').innerHTML=`<img class="photo-preview-img" src="data:${mealPhotoMime};base64,${mealPhotoB64}">`;
+  document.getElementById('meal-analyze-photo-btn').style.display='block';
+  mealResultData=null; document.getElementById('meal-result').style.display='none';
+}
+
+async function analyzeMealText() {
+  const text=document.getElementById('meal-text-input').value.trim();
+  if(!text) { showToast('食事内容を入力してください'); return; }
+  const hasKey=!!(appData.settings.claudeApiKey||'').trim();
+  if(!hasKey) { saveMealDirect(text,null,null); return; }
+  setAnalyzing(true);
+  try {
+    const prompt=`以下の食事内容を分析してください：「${text}」\n\n${FOOD_PROMPT}`;
+    const raw=await callClaude(prompt);
+    mealResultData=parseAI(raw); showMealResult(mealResultData);
+  } catch(err) { showToast('分析エラー: '+err.message); }
+  setAnalyzing(false);
+}
+
+async function analyzeMealPhoto() {
+  if(!mealPhotoB64) { showToast('写真を選択してください'); return; }
+  const hasKey=!!(appData.settings.claudeApiKey||'').trim();
+  if(!hasKey) { showToast('設定画面でAPIキーを設定してください'); return; }
+  setAnalyzing(true);
+  try {
+    const raw=await callClaude(FOOD_PROMPT, mealPhotoB64, mealPhotoMime);
+    mealResultData=parseAI(raw); showMealResult(mealResultData);
+  } catch(err) { showToast('分析エラー: '+err.message); }
+  setAnalyzing(false);
+}
+
+function setAnalyzing(is) {
+  document.getElementById('meal-analyzing').style.display=is?'block':'none';
+  document.getElementById('meal-analyze-text-btn').disabled=is;
+  document.getElementById('meal-analyze-photo-btn').disabled=is;
+}
+
+function showMealResult(r) {
+  document.getElementById('meal-result').style.display='block';
+  document.getElementById('meal-result-name').textContent='🍽 '+r.mealName;
+  document.getElementById('meal-result-comment').textContent=r.comment||'';
+  document.getElementById('meal-result-bars').innerHTML=NUTRIENTS.map(n=>{
+    const got=(r.nutrients?.[n.key]||0), pct=Math.min(100,Math.round(got/n.target*100));
+    const color=pct>=80?'#60C880':pct>=50?'#F0B040':'#F07080';
+    return `<div class="nutr-mini-row">
+      <span style="font-size:13px;width:20px;">${n.icon}</span>
+      <span style="font-size:11px;color:var(--text-medium);width:42px;">${n.name}</span>
+      <div class="nutr-mini-bar-wrap"><div class="nutr-mini-bar" style="width:${pct}%;background:${color};"></div></div>
+      <span style="font-size:11px;font-weight:700;min-width:50px;text-align:right;">${got.toFixed(n.dp)}<span style="font-size:9px;font-weight:400;color:var(--text-light);">${n.unit}</span></span>
+    </div>`;
+  }).join('');
+}
+
+function saveMealDirect(name,nutrients,comment) {
+  const ds=toStr(foodViewDate);
+  if(!appData.meals[ds]) appData.meals[ds]=[];
+  appData.meals[ds].push({ id:uid(), time:mealTime, name, nutrients:nutrients||null, comment:comment||null });
+  persist(); renderFoodTab(); renderCalendar(); showToast('保存しました 🌸'); closeMealModal();
+}
+
+function saveMeal() {
+  if(mealResultData) {
+    saveMealDirect(mealResultData.mealName, mealResultData.nutrients, mealResultData.comment);
+  } else {
+    const name=document.getElementById(mealMode==='text'?'meal-text-input':'meal-text-input').value.trim()||'（記録）';
+    saveMealDirect(name,null,null);
+  }
+}
+
+/* ===== CLAUDE API ===== */
+const FOOD_PROMPT=`この食事を分析し、妊活中の女性向けに栄養素を推定してください。
+JSONのみ返答（説明文や\`\`\`は不要）:
+{"mealName":"料理名","nutrients":{"folicAcid":葉酸mcg,"iron":鉄分mg,"zinc":亜鉛mg,"vitaminD":VitDmcg,"calcium":Camg,"vitaminC":VitCmg,"protein":タンパク質g},"comment":"妊活観点から一言（日本語）"}`;
+
+async function callClaude(prompt, b64, mime) {
+  const key=(appData.settings.claudeApiKey||'').trim();
+  if(!key) throw new Error('APIキーが未設定です');
+  const content=[];
+  if(b64) content.push({type:'image',source:{type:'base64',media_type:mime,data:b64}});
+  content.push({type:'text',text:prompt});
+  const res=await fetch('https://api.anthropic.com/v1/messages',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-calls':'true'},
+    body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:512,messages:[{role:'user',content}]})
+  });
+  if(!res.ok) { const e=await res.json(); throw new Error(e.error?.message||'APIエラー '+res.status); }
+  const d=await res.json(); return d.content[0].text;
+}
+
+function parseAI(raw) {
+  const s=raw.replace(/```json\n?/g,'').replace(/```\n?/g,'').trim();
+  const r=JSON.parse(s);
+  NUTRIENTS.forEach(n=>{ if(r.nutrients?.[n.key]) r.nutrients[n.key]=parseFloat(r.nutrients[n.key])||0; });
+  return r;
+}
+
+/* ===== TEMPERATURE ===== */
+function changeChartMonth(dir) { chartViewDate.setDate(1); chartViewDate.setMonth(chartViewDate.getMonth()+dir); renderTempTab(); }
+function renderTempTab() {
+  const y=chartViewDate.getFullYear(), m=chartViewDate.getMonth();
+  document.getElementById('chart-month-label').textContent=y+'年'+(m+1)+'月';
+  const di=document.getElementById('temp-date-input'); if(!di.value) di.value=toStr(new Date());
+  drawChart(y,m); renderTempList(y,m);
+}
+function drawChart(year,month) {
+  const svgEl=document.getElementById('temp-chart'), W=360,H=180, pL=40,pR=10,pT=12,pB=28, cW=W-pL-pR,cH=H-pT-pB;
+  const dim=new Date(year,month+1,0).getDate(), minT=35.5,maxT=37.5;
+  const data=[]; for(let d=1;d<=dim;d++){const ds=year+'-'+String(month+1).padStart(2,'0')+'-'+String(d).padStart(2,'0'); const t=appData.temperatures[ds]; if(t!=null)data.push({day:d,t});}
+  const xS=d=>pL+(d-1)/(dim-1)*cW, yS=t=>pT+(1-(t-minT)/(maxT-minT))*cH;
+  let s='';
+  const yB=yS(36.7);
+  s+=`<rect x="${pL}" y="${pT}" width="${cW}" height="${yB-pT}" fill="#FFF0F5"/>`;
+  s+=`<rect x="${pL}" y="${yB}" width="${cW}" height="${pT+cH-yB}" fill="#EEF4FF"/>`;
+  [35.5,36.0,36.5,36.7,37.0,37.5].forEach(t=>{const y=yS(t),base=t===36.7;s+=`<line x1="${pL}" y1="${y}" x2="${pL+cW}" y2="${y}" stroke="${base?'#FFB3D1':'#F0D8E8'}" stroke-width="${base?1.5:.5}" stroke-dasharray="${base?'4,3':''}"/>`;s+=`<text x="${pL-3}" y="${y+3.5}" text-anchor="end" font-size="8" fill="#C8A8C0">${t.toFixed(1)}</text>`;});
+  [1,5,10,15,20,25,dim].filter((v,i,a)=>a.indexOf(v)===i).forEach(d=>{if(d<=dim)s+=`<text x="${xS(d).toFixed(1)}" y="${pT+cH+16}" text-anchor="middle" font-size="8" fill="#C8A8C0">${d}</text>`;});
+  if(data.length>1)s+=`<path d="${data.map((p,i)=>`${i?'L':'M'}${xS(p.day).toFixed(1)},${yS(p.t).toFixed(1)}`).join(' ')}" stroke="#F4A7B9" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`;
+  data.forEach(p=>s+=`<circle cx="${xS(p.day).toFixed(1)}" cy="${yS(p.t).toFixed(1)}" r="4" fill="${p.t>=36.7?'#E85070':'#5090D8'}" stroke="white" stroke-width="1.5"/>`);
+  if(!data.length)s+=`<text x="${W/2}" y="${H/2}" text-anchor="middle" font-size="12" fill="#D0A8C0">体温データがありません</text>`;
+  svgEl.setAttribute('viewBox',`0 0 ${W} ${H}`); svgEl.innerHTML=s;
+}
+function addTemperature() {
+  const ds=document.getElementById('temp-date-input').value, raw=document.getElementById('temp-val-input').value;
+  if(!ds||!raw){showToast('日付と体温を入力してください');return;}
+  const t=parseFloat(raw); if(isNaN(t)||t<35||t>40){showToast('体温は35〜40℃で入力してください');return;}
+  appData.temperatures[ds]=t; persist(); document.getElementById('temp-val-input').value=''; renderTempTab(); showToast('体温を記録しました 🌡');
+}
+function renderTempList(year,month) {
+  const dim=new Date(year,month+1,0).getDate(), entries=[];
+  for(let d=dim;d>=1;d--){const ds=year+'-'+String(month+1).padStart(2,'0')+'-'+String(d).padStart(2,'0'); if(appData.temperatures[ds]!=null)entries.push({ds,d,t:appData.temperatures[ds]});}
+  const el=document.getElementById('temp-list');
+  if(!entries.length){el.innerHTML='<div class="empty-state"><div class="empty-icon">🌡️</div><div class="empty-txt">この月の体温データはありません</div></div>';return;}
+  el.innerHTML=entries.map(e=>`<div class="temp-entry"><div class="temp-entry-date">${month+1}月${e.d}日（${WEEKDAYS[fromStr(e.ds).getDay()]}）</div><div style="display:flex;align-items:center;gap:8px;"><div class="temp-entry-val">${e.t.toFixed(2)}<span>℃</span></div><button class="del-btn" onclick="deleteTemp('${e.ds}')">✕</button></div></div>`).join('');
+}
+function deleteTemp(ds) { delete appData.temperatures[ds]; persist(); renderTempTab(); }
+
+/* ===== SETTINGS ===== */
+function loadSettings() {
+  document.getElementById('setting-cycle').value=appData.settings.cycleLength;
+  document.getElementById('setting-period').value=appData.settings.periodLength;
+  document.getElementById('setting-apikey').value=appData.settings.claudeApiKey||'';
+}
+function saveSettings() {
+  appData.settings.cycleLength=parseInt(document.getElementById('setting-cycle').value)||28;
+  appData.settings.periodLength=parseInt(document.getElementById('setting-period').value)||5;
+  appData.settings.claudeApiKey=document.getElementById('setting-apikey').value.trim();
+  persist(); showToast('設定を保存しました');
+}
+function toggleApiKeyVisibility() {
+  const inp=document.getElementById('setting-apikey');
+  inp.type=inp.type==='password'?'text':'password';
+  document.getElementById('api-key-eye').textContent=inp.type==='password'?'👁':'🙈';
+}
+function exportData() {
+  const blob=new Blob([JSON.stringify(appData,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob),a=document.createElement('a');
+  a.href=url;a.download='ninkatsu-'+toStr(new Date())+'.json';a.click();URL.revokeObjectURL(url);showToast('エクスポートしました');
+}
+function importData() {
+  const inp=document.createElement('input');inp.type='file';inp.accept='.json';
+  inp.onchange=e=>{const file=e.target.files[0];if(!file)return;const r=new FileReader();r.onload=ev=>{try{const d=JSON.parse(ev.target.result);if(d.periods&&d.settings){appData=d;if(!appData.meals)appData.meals={};persist();renderCalendar();showToast('インポートしました 🌸');}else showToast('ファイルが正しくありません');}catch(_){showToast('読み込みエラー');}};r.readAsText(file);};inp.click();
+}
+function clearData() {
+  if(!confirm('全データを削除しますか？この操作は元に戻せません。'))return;
+  appData={periods:[],temperatures:{},memos:{},symptoms:{},meals:{},settings:{cycleLength:28,periodLength:5,claudeApiKey:''}};
+  persist();renderCalendar();showToast('削除しました');
+}
+
+/* ===== TOAST ===== */
+let toastTimer;
+function showToast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove('show'),2600);}
+
+/* ===== INIT ===== */
+renderCalendar();
+renderTempTab();
+</script>
+</body>
+</html>
