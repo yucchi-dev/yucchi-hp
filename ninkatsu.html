@@ -239,6 +239,16 @@
     .toast{position:fixed;bottom:88px;left:50%;transform:translateX(-50%);background:var(--text-dark);color:#fff;padding:9px 20px;border-radius:20px;font-size:13px;z-index:300;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap;}
     .toast.show{opacity:1;}
     ::-webkit-scrollbar{width:3px;}::-webkit-scrollbar-thumb{background:var(--pink-200);border-radius:2px;}
+
+    /* Calendar memo list */
+    .cal-memo-section{padding:0 12px 20px;}
+    .cal-memo-title{font-size:11px;font-weight:700;color:var(--text-light);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px;padding-top:2px;}
+    .cal-memo-item{background:#fff;border-radius:12px;padding:10px 13px;margin-bottom:8px;box-shadow:0 2px 8px var(--shadow);cursor:pointer;transition:transform .1s;}
+    .cal-memo-item:active{transform:scale(.98);}
+    .cal-memo-item-date{font-size:12px;font-weight:700;color:var(--text-medium);margin-bottom:5px;}
+    .cal-memo-syms{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:5px;}
+    .cal-memo-sym{font-size:10px;padding:2px 8px;border-radius:10px;background:var(--pink-50);color:var(--pink-500);}
+    .cal-memo-text{font-size:13px;color:var(--text-dark);line-height:1.65;white-space:pre-wrap;word-break:break-word;}
   </style>
 </head>
 <body>
@@ -276,6 +286,7 @@
       <div class="legend-item"><span style="font-size:11px;color:#FF5580;">♥</span> 仲良しタイミング</div>
       <div class="legend-item"><div class="legend-dot" style="background:#F3EEFF;border:1px solid #C8A8E0;"></div>PMS期間</div>
     </div>
+    <div id="cal-memos" class="cal-memo-section"></div>
   </div>
 
   <!-- ── FOOD ──────────────────────────────────── -->
@@ -672,6 +683,35 @@ function renderCalendar() {
     html+='</div>';
   }
   document.getElementById('calendar-grid').innerHTML=html;
+  renderCalMemos(year, month);
+}
+
+function renderCalMemos(year, month) {
+  const el = document.getElementById('cal-memos');
+  const dim = new Date(year, month+1, 0).getDate();
+  const entries = [];
+  for (let d = 1; d <= dim; d++) {
+    const ds = year+'-'+String(month+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+    const memo = appData.memos[ds] || '';
+    const syms = appData.symptoms[ds] || [];
+    if (memo || syms.length) entries.push({ ds, d, memo, syms });
+  }
+  if (!entries.length) { el.innerHTML = ''; return; }
+  const items = entries.map(e => {
+    const dt = fromStr(e.ds);
+    const dateStr = (month+1)+'月'+e.d+'日（'+WEEKDAYS[dt.getDay()]+'）';
+    const symsHtml = e.syms.length
+      ? '<div class="cal-memo-syms">'+e.syms.map(s=>'<span class="cal-memo-sym">'+s+'</span>').join('')+'</div>'
+      : '';
+    const memoHtml = e.memo
+      ? '<div class="cal-memo-text">'+e.memo.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')+'</div>'
+      : '';
+    return '<div class="cal-memo-item" onclick="openDayModal(\''+e.ds+'\')">'
+      +'<div class="cal-memo-item-date">'+dateStr+'</div>'
+      +symsHtml+memoHtml
+      +'</div>';
+  }).join('');
+  el.innerHTML = '<div class="cal-memo-title">📝 この月のメモ・記録</div>'+items;
 }
 
 /* ===== DAY MODAL ===== */
