@@ -495,7 +495,9 @@
 
 <script>
 /* ===== CONSTANTS ===== */
-const SYMPTOMS = ['🩹 腹痛','🤕 頭痛','😴 眠気','😤 イライラ','💧 おりもの多','🤢 吐き気','😰 むくみ','💕 性交あり','🌙 不眠','🍫 食欲増','🥶 冷え','💦 おりもの少'];
+const SYMPTOMS = ['🩹 腹痛','🤕 頭痛','😴 眠気','😤 イライラ','💧 おりもの多','🤢 吐き気','😰 むくみ','💕','🌙 不眠','🍫 食欲増','🥶 冷え','💦 おりもの少'];
+// 旧データ互換: '💕 性交あり' → '💕' に正規化して表示
+function normSym(s){ return s==='💕 性交あり'?'💕':s; }
 const WEEKDAYS = ['日','月','火','水','木','金','土'];
 const MEAL_LABELS = { breakfast:'🌅 朝食', lunch:'🌤 昼食', dinner:'🌙 夕食', snack:'☕ 間食' };
 const MEAL_ORDER  = ['breakfast','lunch','dinner','snack'];
@@ -666,8 +668,8 @@ function renderCalendar() {
       const hasMeal=!!(appData.meals[ds]&&appData.meals[ds].length);
       const memoRaw=appData.memos[ds]||'';
       const symsRaw=appData.symptoms[ds]||[];
-      // セル内テキスト: メモ優先、なければ症状の絵文字並べ
-      const cellNoteText=(memoRaw.replace(/\n/g,' ')||symsRaw.map(s=>s.split(' ').slice(1).join('')).join(' ')).trim();
+      // セル内テキスト: メモ優先、なければ症状名（「性交あり」は💕に統一）
+      const cellNoteText=(memoRaw.replace(/\n/g,' ')||symsRaw.map(s=>{const n=normSym(s);const p=n.split(' ');return p.length>1?p.slice(1).join(''):p[0];}).join(' ')).trim();
 
       // Icon in center
       let icon='';
@@ -707,7 +709,7 @@ function renderCalMemos(year, month) {
     const dt = fromStr(e.ds);
     const dateStr = (month+1)+'月'+e.d+'日（'+WEEKDAYS[dt.getDay()]+'）';
     const symsHtml = e.syms.length
-      ? '<div class="cal-memo-syms">'+e.syms.map(s=>'<span class="cal-memo-sym">'+s+'</span>').join('')+'</div>'
+      ? '<div class="cal-memo-syms">'+e.syms.map(s=>'<span class="cal-memo-sym">'+normSym(s)+'</span>').join('')+'</div>'
       : '';
     const memoHtml = e.memo
       ? '<div class="cal-memo-text">'+e.memo.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')+'</div>'
@@ -745,7 +747,11 @@ function updatePeriodBtns(ip) {
   document.getElementById('period-no-btn').className='period-btn'+(!ip?' active-no':'');
 }
 function renderSymptomChips() {
-  document.getElementById('symptom-chips').innerHTML=SYMPTOMS.map(s=>`<button class="symptom-chip${selSymptoms.has(s)?' on':''}" onclick="toggleSym('${s}')">${s}</button>`).join('');
+  // 旧データで '💕 性交あり' が保存されている場合も選択済みと判定
+  document.getElementById('symptom-chips').innerHTML=SYMPTOMS.map(s=>{
+    const on=selSymptoms.has(s)||(s==='💕'&&selSymptoms.has('💕 性交あり'));
+    return `<button class="symptom-chip${on?' on':''}" onclick="toggleSym('${s}')">${normSym(s)}</button>`;
+  }).join('');
 }
 function toggleSym(s) { selSymptoms.has(s)?selSymptoms.delete(s):selSymptoms.add(s); renderSymptomChips(); }
 function saveDay() {
