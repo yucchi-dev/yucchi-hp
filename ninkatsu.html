@@ -73,6 +73,7 @@
     .heart-mark{font-size:11px;color:#FF5580;line-height:1;}
     .day-icon-area{flex:1;display:flex;align-items:center;justify-content:center;}
     .day-inds{display:flex;justify-content:center;gap:1px;font-size:6px;padding-bottom:2px;min-height:10px;}
+    .cell-note{font-size:7px;line-height:1.3;padding:0 3px 1px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;word-break:break-all;color:var(--text-medium);}
 
     /* Today ring */
     .day-cell.today{box-shadow:inset 0 0 0 2px var(--pink-400);}
@@ -662,8 +663,11 @@ function renderCalendar() {
       const numW   = (isPeriod||isToday)?'700':'500';
       const todayRing = isToday?'box-shadow:inset 0 0 0 2px var(--pink-400);':'';
       const hasTemp=appData.temperatures[ds]!=null;
-      const hasMemo=!!(appData.memos[ds]||(appData.symptoms[ds]&&appData.symptoms[ds].length));
       const hasMeal=!!(appData.meals[ds]&&appData.meals[ds].length);
+      const memoRaw=appData.memos[ds]||'';
+      const symsRaw=appData.symptoms[ds]||[];
+      // セル内テキスト: メモ優先、なければ症状の絵文字並べ
+      const cellNoteText=(memoRaw.replace(/\n/g,' ')||symsRaw.map(s=>s.split(' ').slice(1).join('')).join(' ')).trim();
 
       // Icon in center
       let icon='';
@@ -671,13 +675,15 @@ function renderCalendar() {
       else if (isPredPeriod) icon='<div class="moon-shape moon-pred"></div>';
       else if (isOv)         icon='<div class="ov-shape"></div>';
 
+      const noteHtml=cellNoteText?`<div class="cell-note">${cellNoteText.replace(/&/g,'&amp;').replace(/</g,'&lt;')}</div>`:'';
       html+=`<div class="day-cell ${phase}" style="${todayRing}" onclick="openDayModal('${ds}')">
         <div class="cell-top">
           <span class="day-num" style="color:${numCol};font-weight:${numW};">${day}</span>
           ${isTiming&&!isPeriod?'<span class="heart-mark">♥</span>':''}
         </div>
         <div class="day-icon-area">${icon}</div>
-        <div class="day-inds">${hasTemp?'🌡':''}${hasMemo?'📝':''}${hasMeal?'🍽':''}</div>
+        ${noteHtml}
+        <div class="day-inds">${hasTemp?'🌡':''}${hasMeal?'🍽':''}</div>
       </div>`;
     }
     html+='</div>';
