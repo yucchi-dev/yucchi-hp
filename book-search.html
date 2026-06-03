@@ -400,6 +400,8 @@
 <script>
 let scanner = null;
 let scannerRunning = false;
+let lastSearchBooks = [];   // 直前の検索結果を保存
+let lastSearchQuery = '';
 
 // ===== バーコードスキャナー =====
 function toggleScanner() {
@@ -455,6 +457,8 @@ async function doSearch() {
       showError('本が見つかりませんでした。別のキーワードを試してください。');
       return;
     }
+    lastSearchBooks = books;
+    lastSearchQuery = q;
     if (books.length === 1) showDetail(books[0]);
     else showCandidates(books, q);
   } catch(e) {
@@ -711,7 +715,7 @@ async function showDetail(book) {
 
   const html = `
     <!-- 戻るボタン（上） -->
-    <button class="back-btn" onclick="history.back() || doSearchBack()" style="margin-top:16px;">← 検索結果に戻る</button>
+    <button class="back-btn" onclick="goBack()" style="margin-top:16px;">← 検索結果に戻る</button>
 
     <!-- 本の情報 -->
     <div class="book-hero" style="margin-top:12px;">
@@ -885,9 +889,17 @@ function showError(msg) {
   document.getElementById('main').innerHTML = `<div class="err-box" style="margin-top:20px;">❌ ${escHtml(msg)}</div>`;
 }
 
-function doSearchBack() {
-  const q = document.getElementById('query').value.trim();
-  if (q) doSearch(); else document.getElementById('main').innerHTML = '<div class="center-state"><div class="icon">📖</div><p>本のタイトルや著者名を入力するか、<br>📷 ボタンでバーコードをスキャン</p></div>';
+function goBack() {
+  if (lastSearchBooks.length > 1) {
+    // 検索結果が複数あった → 候補リストに戻る
+    showCandidates(lastSearchBooks, lastSearchQuery);
+  } else if (lastSearchQuery) {
+    // 1件しかなかった → 再検索
+    doSearch();
+  } else {
+    // 検索前 → トップに戻る
+    document.getElementById('main').innerHTML = '<div class="center-state"><div class="icon">📖</div><p>本のタイトルや著者名を入力するか、<br>📷 ボタンでバーコードをスキャン</p></div>';
+  }
 }
 
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
