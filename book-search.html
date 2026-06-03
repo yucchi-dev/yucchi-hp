@@ -1,0 +1,900 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>📚 本の値段まとめ検索</title>
+  <style>
+    :root {
+      --bg: #f5f4f0;
+      --card: #ffffff;
+      --accent: #6c63ff;
+      --accent-light: #ebe9ff;
+      --text: #1a1a2e;
+      --muted: #8a8a9a;
+      --border: #e8e6f0;
+      --shadow: 0 4px 20px rgba(108,99,255,0.08);
+      --shadow-sm: 0 2px 8px rgba(0,0,0,0.06);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Hiragino Sans', 'Noto Sans JP', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* ===== ヘッダー ===== */
+    .header {
+      background: linear-gradient(135deg, #6c63ff 0%, #9c88ff 100%);
+      padding: 32px 20px 28px;
+      text-align: center;
+      color: white;
+    }
+    .header h1 { font-size: 1.6rem; font-weight: 800; letter-spacing: -0.02em; }
+    .header p { font-size: 0.85rem; opacity: 0.88; margin-top: 6px; }
+
+    /* ===== 検索エリア ===== */
+    .search-box {
+      background: white;
+      margin: -16px 16px 0;
+      border-radius: 18px;
+      box-shadow: 0 8px 30px rgba(108,99,255,0.18);
+      padding: 18px;
+      position: relative;
+      z-index: 10;
+    }
+
+    .search-input-row {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .search-input {
+      flex: 1;
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      padding: 14px 16px;
+      font-size: 1rem;
+      outline: none;
+      transition: border-color 0.2s;
+      color: var(--text);
+    }
+    .search-input:focus { border-color: var(--accent); }
+
+    .btn-scan {
+      width: 52px;
+      height: 52px;
+      background: var(--accent-light);
+      color: var(--accent);
+      border: none;
+      border-radius: 12px;
+      font-size: 1.4rem;
+      cursor: pointer;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s;
+    }
+    .btn-scan:hover { background: #d8d4ff; }
+
+    .btn-search-main {
+      width: 100%;
+      margin-top: 12px;
+      padding: 15px;
+      background: var(--accent);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      font-size: 1.05rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: opacity 0.2s;
+      letter-spacing: 0.02em;
+    }
+    .btn-search-main:hover { opacity: 0.88; }
+    .btn-search-main:active { opacity: 0.75; }
+
+    /* ===== カメラスキャン ===== */
+    .scanner-area {
+      display: none;
+      margin: 14px 0 0;
+    }
+    .scanner-area.open { display: block; }
+    #reader {
+      width: 100%;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    .scanner-hint {
+      font-size: 0.78rem;
+      color: var(--muted);
+      text-align: center;
+      margin-top: 8px;
+    }
+    .btn-scan-close {
+      width: 100%;
+      padding: 10px;
+      background: #fce4ec;
+      color: #c62828;
+      border: none;
+      border-radius: 10px;
+      font-size: 0.88rem;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 8px;
+    }
+
+    /* ===== メインコンテンツ ===== */
+    .main { padding: 20px 16px 100px; max-width: 680px; margin: 0 auto; }
+
+    /* ===== 候補リスト ===== */
+    .section-header {
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 10px;
+      padding-left: 4px;
+    }
+
+    .candidate-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 24px;
+    }
+    .candidate-card {
+      background: var(--card);
+      border-radius: 14px;
+      box-shadow: var(--shadow-sm);
+      padding: 14px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      cursor: pointer;
+      transition: transform 0.15s, box-shadow 0.15s;
+      border: 2px solid transparent;
+    }
+    .candidate-card:hover {
+      transform: translateY(-1px);
+      box-shadow: var(--shadow);
+      border-color: var(--accent-light);
+    }
+    .candidate-card:active { transform: scale(0.98); }
+    .cand-thumb {
+      width: 52px;
+      height: 74px;
+      flex-shrink: 0;
+      border-radius: 5px;
+      overflow: hidden;
+      background: var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .cand-thumb img { width: 100%; height: 100%; object-fit: cover; }
+    .cand-thumb .no-img { font-size: 1.5rem; }
+    .cand-info { flex: 1; min-width: 0; }
+    .cand-title { font-weight: 700; font-size: 0.95rem; line-height: 1.4; }
+    .cand-sub { font-size: 0.78rem; color: var(--muted); margin-top: 3px; }
+    .cand-price-row { display: flex; align-items: center; gap: 8px; margin-top: 6px; flex-wrap: wrap; }
+    .cand-price { font-size: 0.9rem; font-weight: 800; color: var(--accent); }
+    .cand-price.no-price { color: var(--muted); font-weight: 500; font-size: 0.8rem; }
+    .cand-price-hint { font-size: 0.72rem; color: var(--muted); }
+    .cand-arrow { color: var(--muted); font-size: 1rem; flex-shrink: 0; }
+
+    /* ===== 本の詳細 ===== */
+    .book-hero {
+      background: var(--card);
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+      padding: 20px;
+      display: flex;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+    .book-cover-wrap {
+      flex-shrink: 0;
+      width: 90px;
+    }
+    .book-cover-wrap img {
+      width: 90px;
+      border-radius: 6px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.18);
+    }
+    .book-cover-none {
+      width: 90px;
+      height: 128px;
+      background: var(--accent-light);
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+    }
+    .book-meta { flex: 1; min-width: 0; }
+    .book-title { font-size: 1.1rem; font-weight: 800; line-height: 1.4; }
+    .book-author { font-size: 0.82rem; color: var(--muted); margin-top: 5px; }
+    .book-pub { font-size: 0.78rem; color: var(--muted); margin-top: 2px; }
+    .book-price-big {
+      font-size: 1.5rem;
+      font-weight: 800;
+      color: var(--accent);
+      margin-top: 10px;
+    }
+    .book-price-big span { font-size: 0.85rem; font-weight: 500; color: var(--muted); }
+
+    /* ===== ショップボタングリッド ===== */
+    .shop-section { margin-bottom: 16px; }
+    .shop-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .shop-btn {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 16px 14px;
+      border-radius: 14px;
+      text-decoration: none;
+      color: white;
+      font-weight: 700;
+      font-size: 0.9rem;
+      transition: opacity 0.15s, transform 0.12s;
+      box-shadow: var(--shadow-sm);
+    }
+    .shop-btn:active { transform: scale(0.97); opacity: 0.85; }
+    .shop-btn .btn-icon { font-size: 1.4rem; }
+    .shop-btn .btn-texts { }
+    .shop-btn .btn-name { font-size: 0.88rem; font-weight: 700; }
+    .shop-btn .btn-note { font-size: 0.72rem; opacity: 0.85; margin-top: 1px; }
+
+    .btn-rakuten { background: linear-gradient(135deg, #cc0000, #ff3333); }
+    .btn-amazon { background: linear-gradient(135deg, #232f3e, #37475a); }
+    .btn-mercari { background: linear-gradient(135deg, #ff0211, #ff4d57); }
+    .btn-bookoff { background: linear-gradient(135deg, #f5a623, #f7c05f); }
+
+    /* ===== 図書館セクション ===== */
+    .lib-section {
+      background: var(--card);
+      border-radius: 18px;
+      box-shadow: var(--shadow-sm);
+      overflow: hidden;
+      margin-bottom: 16px;
+    }
+    .lib-header {
+      padding: 14px 18px;
+      background: #e8f5e9;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .lib-header-icon { font-size: 1.1rem; }
+    .lib-header-text { font-weight: 700; font-size: 0.9rem; color: #1b5e20; flex: 1; }
+
+    .lib-row {
+      display: flex;
+      align-items: center;
+      padding: 13px 18px;
+      border-bottom: 1px solid var(--border);
+      gap: 10px;
+    }
+    .lib-row:last-child { border-bottom: none; }
+    .lib-name { flex: 1; font-size: 0.88rem; font-weight: 500; }
+    .lib-badge {
+      padding: 5px 12px;
+      border-radius: 20px;
+      font-size: 0.76rem;
+      font-weight: 700;
+    }
+    .badge-available { background: #e8f5e9; color: #2e7d32; }
+    .badge-unavailable { background: #fce4ec; color: #c62828; }
+    .badge-loading { background: #ede7f6; color: #4527a0; }
+    .badge-unknown { background: #f5f5f5; color: #777; }
+
+    .lib-link {
+      font-size: 0.78rem;
+      color: var(--accent);
+      text-decoration: none;
+      white-space: nowrap;
+    }
+
+    /* ===== ローディング・エラー ===== */
+    .center-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--muted);
+    }
+    .center-state .icon { font-size: 3rem; margin-bottom: 12px; }
+    .center-state p { font-size: 0.9rem; line-height: 1.6; }
+
+    .spinner-wrap { text-align: center; padding: 40px; }
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      margin: 0 auto 12px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spinner-label { font-size: 0.85rem; color: var(--muted); }
+
+    .err-box {
+      background: #fff3f3;
+      border-radius: 12px;
+      border: 1px solid #ffcdd2;
+      padding: 16px 18px;
+      color: #b71c1c;
+      font-size: 0.88rem;
+    }
+
+    .back-btn {
+      display: block;
+      width: 100%;
+      padding: 14px;
+      background: var(--accent-light);
+      color: var(--accent);
+      border: none;
+      border-radius: 12px;
+      font-size: 0.92rem;
+      font-weight: 700;
+      cursor: pointer;
+      text-align: center;
+      margin-top: 12px;
+      transition: background 0.15s;
+    }
+    .back-btn:hover { background: #d8d4ff; }
+
+    @media (max-width: 400px) {
+      .shop-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <h1>📚 本の値段まとめ検索</h1>
+  <p>楽天・Amazon・メルカリ・図書館を一発比較</p>
+</div>
+
+<div style="padding: 0 16px;">
+  <div class="search-box">
+    <div class="search-input-row">
+      <input class="search-input" id="query" type="text"
+        placeholder="タイトル・著者名・ISBN…" autocomplete="off">
+      <button class="btn-scan" id="scanBtn" onclick="toggleScanner()" title="バーコードで検索">
+        📷
+      </button>
+    </div>
+
+    <!-- バーコードスキャナー -->
+    <div class="scanner-area" id="scannerArea">
+      <div id="reader"></div>
+      <p class="scanner-hint">本の裏のバーコードをカメラに向けてください</p>
+      <button class="btn-scan-close" onclick="stopScanner()">✕ スキャンをやめる</button>
+    </div>
+
+    <button class="btn-search-main" onclick="doSearch()">🔍 検索する</button>
+  </div>
+</div>
+
+<div class="main" id="main">
+  <div class="center-state">
+    <div class="icon">📖</div>
+    <p>本のタイトルや著者名を入力するか、<br>📷 ボタンでバーコードをスキャン</p>
+  </div>
+</div>
+
+<!-- html5-qrcode (バーコード読み取り) -->
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+
+<script>
+let scanner = null;
+let scannerRunning = false;
+
+// ===== バーコードスキャナー =====
+function toggleScanner() {
+  const area = document.getElementById('scannerArea');
+  if (scannerRunning) { stopScanner(); return; }
+  area.classList.add('open');
+  document.getElementById('scanBtn').textContent = '✕';
+
+  scanner = new Html5Qrcode('reader');
+  scanner.start(
+    { facingMode: 'environment' },
+    { fps: 10, qrbox: { width: 250, height: 100 } },
+    (decodedText) => {
+      stopScanner();
+      // ISBNは13桁の数字
+      const isbn = decodedText.replace(/[^0-9]/g, '');
+      if (isbn.length === 13 || isbn.length === 10) {
+        document.getElementById('query').value = isbn;
+        doSearch();
+      }
+    },
+    () => {}
+  ).then(() => { scannerRunning = true; })
+   .catch(err => {
+     stopScanner();
+     alert('カメラを起動できませんでした。ブラウザの設定でカメラを許可してください。\n' + err);
+   });
+}
+
+function stopScanner() {
+  if (scanner && scannerRunning) {
+    scanner.stop().catch(() => {});
+    scannerRunning = false;
+  }
+  document.getElementById('scannerArea').classList.remove('open');
+  document.getElementById('scanBtn').textContent = '📷';
+}
+
+// ===== 検索 =====
+document.getElementById('query').addEventListener('keydown', e => {
+  if (e.key === 'Enter') doSearch();
+});
+
+async function doSearch() {
+  const q = document.getElementById('query').value.trim();
+  if (!q) return;
+  stopScanner();
+  showSpinner('検索中...');
+
+  try {
+    const books = await searchBooks(q);
+    if (!books.length) {
+      showError('本が見つかりませんでした。別のキーワードを試してください。');
+      return;
+    }
+    if (books.length === 1) showDetail(books[0]);
+    else showCandidates(books, q);
+  } catch(e) {
+    showError('検索エラー: ' + e.message);
+  }
+}
+
+// ===== 検索：NDL（国立国会図書館）→ OpenBDで詳細補完 =====
+async function searchBooks(q) {
+  const cleanQ = q.replace(/-/g, '');
+  const isIsbn = /^[0-9]{10,13}$/.test(cleanQ);
+
+  if (isIsbn) {
+    // ISBNなら直接OpenBDで取得
+    const book = await fetchOpenBDFull(cleanQ);
+    return book ? [book] : [];
+  }
+
+  // NDL API で検索（タイトル検索 + 著者検索を並行、ISBNで重複排除してマージ）
+  const [byTitle, byCreator] = await Promise.all([
+    ndlSearchBooks(q, 'title', 30),
+    ndlSearchBooks(q, 'creator', 20),
+  ]);
+  const seenMerge = new Set();
+  let ndlBooks = [];
+  for (const b of [...byTitle, ...byCreator]) {
+    const key = b.isbn || b.title;
+    if (!seenMerge.has(key)) { seenMerge.add(key); ndlBooks.push(b); }
+  }
+  if (!ndlBooks.length) ndlBooks = await ndlSearchBooks(q, 'any', 15);
+
+  if (!ndlBooks.length) {
+    throw new Error('本が見つかりませんでした。もう少し具体的なキーワードを試してください。');
+  }
+
+  // ISBNがある本はOpenBDで定価・表紙を補完
+  const isbns = ndlBooks.map(b => b.isbn).filter(Boolean);
+  let openBDMap = {};
+  if (isbns.length) {
+    try {
+      const res2 = await fetch(`https://api.openbd.jp/v1/get?isbn=${isbns.join(',')}`);
+      const arr = await res2.json();
+      arr.forEach((item, i) => {
+        if (!item) return;
+        const s = item.summary || {};
+        let price = s.price ? parseInt(s.price) : null;
+        if (!price) {
+          const onixPrices = item?.onix?.ProductSupply?.SupplyDetail?.Price;
+          const pl = Array.isArray(onixPrices) ? onixPrices : (onixPrices ? [onixPrices] : []);
+          const taxIn  = pl.find(p => p.PriceType === '03');
+          const taxOut = pl.find(p => p.PriceType === '01');
+          if (taxIn)  price = parseInt(taxIn.PriceAmount);
+          else if (taxOut) price = Math.round(parseInt(taxOut.PriceAmount) * 1.1);
+        }
+        openBDMap[isbns[i]] = { cover: s.cover || '', price };
+      });
+    } catch {}
+  }
+
+  // NDLの書誌情報ベースにOpenBDで補完して返す
+  return ndlBooks.map(b => {
+    const ob = openBDMap[b.isbn] || {};
+    return {
+      ...b,
+      cover: ob.cover || b.cover || '',
+      price: ob.price || b.price || null,
+    };
+  });
+}
+
+// ===== NDL APIで書誌情報（タイトル・著者・ISBN）を取得 =====
+// mediatype 1=図書, 4=児童書（絵本含む）の両方を検索してマージ
+async function ndlSearchBooks(q, param, limit) {
+  // mediatypeパラメータはこのAPIでは効かないため使わない
+  // 代わりに「ISBN（978-4）を持つもの＝書籍」でフィルターする
+  const url = `https://ndlsearch.ndl.go.jp/api/opensearch?${param}=${encodeURIComponent(q)}&cnt=${limit}`;
+  const res = await fetch(url);
+  if (!res.ok) return [];
+  const xml = await res.text();
+  const allItems = [...new DOMParser().parseFromString(xml, 'application/xml').querySelectorAll('item')];
+
+  const books = [];
+  const seenIsbns = new Set();
+
+  for (const item of allItems) {
+    const dc = tag => [...item.getElementsByTagNameNS('http://purl.org/dc/elements/1.1/', tag)]
+                        .map(e => e.textContent).join(' / ');
+    const ids = [...item.getElementsByTagNameNS('http://purl.org/dc/elements/1.1/', 'identifier')]
+                .map(e => e.textContent.replace(/-/g, ''));
+    const isbn = ids.find(id => /^9784\d{9}$/.test(id))
+              || ids.find(id => /^978\d{10}$/.test(id))
+              || '';
+
+    // ISBN重複スキップ
+    if (isbn && seenIsbns.has(isbn)) continue;
+    if (isbn) seenIsbns.add(isbn);
+
+    const title = item.querySelector('title')?.textContent || '';
+    if (!title) continue;
+
+    books.push({
+      title,
+      authors: dc('creator'),
+      publisher: dc('publisher'),
+      publishedDate: dc('date'),
+      isbn,
+      cover: '',
+      price: null,
+    });
+  }
+  return books;
+}
+
+// ===== OpenBD: ISBN直接検索（フル情報）=====
+async function fetchOpenBDFull(isbn) {
+  try {
+    const res = await fetch(`https://api.openbd.jp/v1/get?isbn=${isbn}`);
+    const data = await res.json();
+    if (!data || !data[0]) return null;
+    const s = data[0].summary || {};
+
+    // 価格: summary.price → ONIXの税抜価格×1.1 の順で取得
+    let price = s.price ? parseInt(s.price) : null;
+    if (!price) {
+      const onixPrices = data[0]?.onix?.ProductSupply?.SupplyDetail?.Price;
+      const priceList = Array.isArray(onixPrices) ? onixPrices : (onixPrices ? [onixPrices] : []);
+      // PriceType 03=税込, 01=税抜
+      const taxIn  = priceList.find(p => p.PriceType === '03');
+      const taxOut = priceList.find(p => p.PriceType === '01');
+      if (taxIn)  price = parseInt(taxIn.PriceAmount);
+      else if (taxOut) price = Math.round(parseInt(taxOut.PriceAmount) * 1.1); // 税込に換算
+    }
+
+    return {
+      title: s.title || '不明',
+      authors: s.author || '',
+      publisher: s.publisher || '',
+      publishedDate: s.pubdate ? s.pubdate.slice(0,6) : '',
+      isbn: s.isbn || isbn,
+      cover: s.cover || '',
+      price,
+    };
+  } catch { return null; }
+}
+
+// ===== OpenBDで定価・表紙を補完 =====
+async function fetchOpenBD(isbn) {
+  return fetchOpenBDFull(isbn);
+}
+
+// ===== 候補リスト表示 =====
+function showCandidates(books, query) {
+  const q = (query || '').trim().toLowerCase();
+  const sorted = [...books].sort((a, b) => {
+    const score = (book) => {
+      const t = book.title.toLowerCase();
+      const main = t.split(/[：:；;　 \/\(（]/)[0].trim();
+      let s;
+
+      // ① タイトル一致度
+      if (t === q)         s = 0;
+      else if (main === q) s = 1;
+      else if (t.startsWith(q)) s = 2 + t.length * 0.01;
+      else if (t.includes(q))   s = 5 + t.length * 0.05;
+      else s = 50 + t.length * 0.1;
+
+      // ② 定価あり（現在流通中の一般書）→ 優先
+      if (!book.price) s += 8;
+
+      // ③ 連載・回号つき専門書を下げる（「第N回」「(N)」「No.N」など）
+      if (/第\d+回|[\(（]\d+[\)）]|no\.\d+|vol\.\d+/i.test(t)) s += 15;
+
+      // ④ タイトルが極端に長い（40字超）→ 専門書・シリーズ物として下げる
+      if (book.title.length > 40) s += 10;
+
+      return s;
+    };
+    return score(a) - score(b);
+  });
+  window.__books = sorted;
+
+  const html = `
+    <p class="section-header" style="margin-top:20px;">${sorted.length}件見つかりました — タップして詳細を見る</p>
+    <div class="candidate-list">
+      ${sorted.map((b, i) => {
+        const coverUrl = b.cover || (b.isbn ? `https://cover.openbd.jp/${b.isbn}.jpg` : '');
+        const imgHtml = coverUrl
+          ? `<img src="${coverUrl}" alt="" loading="lazy" onerror="this.style.display='none';this.parentNode.querySelector('.no-img').style.display='flex'">`
+          : '';
+        return `
+        <div class="candidate-card" onclick="showDetail(window.__books[${i}])">
+          <div class="cand-thumb">
+            ${imgHtml}
+            <div class="no-img" style="${coverUrl ? 'display:none' : ''}">📖</div>
+          </div>
+          <div class="cand-info">
+            <div class="cand-title">${escHtml(b.title)}</div>
+            <div class="cand-sub">${escHtml(b.authors)}${b.publisher ? '　' + escHtml(b.publisher) : ''}</div>
+            <div class="cand-price-row">
+              <span class="cand-price ${b.price ? '' : 'no-price'}">
+                ${b.price ? '定価 ¥' + b.price.toLocaleString() : '定価不明'}
+              </span>
+              ${b.price ? `<span class="cand-price-hint">タップして各サイトの価格を比較 →</span>` : ''}
+            </div>
+          </div>
+          <div class="cand-arrow">›</div>
+        </div>`;
+      }).join('')}
+    </div>
+  `;
+  document.getElementById('main').innerHTML = html;
+}
+
+// ===== 詳細表示 =====
+async function showDetail(book) {
+  showSpinner('価格・図書館情報を読み込み中...');
+
+  // OpenBDで定価・表紙を補完
+  if (book.isbn) {
+    const openbd = await fetchOpenBD(book.isbn);
+    if (openbd) {
+      if (!book.price && openbd.price) book.price = openbd.price;
+      if (!book.cover && openbd.cover) book.cover = openbd.cover;
+      if (!book.publisher && openbd.publisher) book.publisher = openbd.publisher;
+    }
+    // OpenBDの表紙URLパターンでも試みる
+    if (!book.cover) book.cover = `https://cover.openbd.jp/${book.isbn}.jpg`;
+  }
+
+  const isbn = book.isbn || '';
+  const title = book.title || '';
+  const q = encodeURIComponent(isbn || title);
+  const titleQ = encodeURIComponent(title);
+
+  // 外部リンクを生成
+  const amazonUrl = isbn
+    ? `https://www.amazon.co.jp/s?k=${q}&i=stripbooks`
+    : `https://www.amazon.co.jp/s?k=${titleQ}&i=stripbooks`;
+  const rakutenUrl = isbn
+    ? `https://books.rakuten.co.jp/search?sitem=${q}`
+    : `https://books.rakuten.co.jp/search?sitem=${titleQ}`;
+  const mercariUrl = `https://jp.mercari.com/search?keyword=${titleQ}&categoryId=5&sort=price&order=asc`;
+  const bookoffUrl = `https://www.bookoffonline.co.jp/files/search.html?search%5Bnew_keyword%5D=${titleQ}`;
+
+  // 図書館リスト（相模原市周辺）
+  const libraries = [
+    { name: '相模原市立図書館', systemId: 'Kanagawa_Sagamihara' },
+    { name: '町田市立図書館',   systemId: 'Tokyo_Machida' },
+    { name: '厚木市立図書館',   systemId: 'Kanagawa_Atsugi' },
+    { name: '大和市立図書館',   systemId: 'Kanagawa_Yamato' },
+    { name: '座間市立図書館',   systemId: 'Kanagawa_Zama' },
+    { name: '海老名市立図書館', systemId: 'Kanagawa_Ebina' },
+  ];
+
+  const html = `
+    <!-- 戻るボタン（上） -->
+    <button class="back-btn" onclick="history.back() || doSearchBack()" style="margin-top:16px;">← 検索結果に戻る</button>
+
+    <!-- 本の情報 -->
+    <div class="book-hero" style="margin-top:12px;">
+      <div class="book-cover-wrap">
+        <img src="${book.cover || ''}" alt="${escHtml(title)}"
+          onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"
+          ${book.cover ? '' : 'style="display:none"'}>
+        <div class="book-cover-none" ${book.cover ? 'style="display:none"' : ''}>📖</div>
+      </div>
+      <div class="book-meta">
+        <div class="book-title">${escHtml(title)}</div>
+        ${book.subtitle ? `<div class="book-author" style="font-weight:600">${escHtml(book.subtitle)}</div>` : ''}
+        <div class="book-author">${escHtml(book.authors || '')}</div>
+        <div class="book-pub">${escHtml(book.publisher || '')}${book.publishedDate ? '　' + book.publishedDate : ''}</div>
+        <div class="book-price-big">
+          ${book.price
+            ? `¥${book.price.toLocaleString()} <span>（定価・税込）</span>`
+            : `<span style="font-size:0.9rem">定価不明</span>`}
+        </div>
+      </div>
+    </div>
+
+    <!-- ショップボタン -->
+    <div class="shop-section">
+      <p class="section-header">どこで買う？</p>
+      <div class="shop-grid">
+        <a href="${rakutenUrl}" target="_blank" class="shop-btn btn-rakuten">
+          <span class="btn-icon">🛒</span>
+          <div class="btn-texts">
+            <div class="btn-name">楽天ブックス</div>
+            <div class="btn-note">${book.price ? '¥' + book.price.toLocaleString() + '（定価）' : '価格はサイトで確認'}</div>
+          </div>
+        </a>
+        <a href="${amazonUrl}" target="_blank" class="shop-btn btn-amazon">
+          <span class="btn-icon">📦</span>
+          <div class="btn-texts">
+            <div class="btn-name">Amazon</div>
+            <div class="btn-note">${book.price ? '新品 ¥' + book.price.toLocaleString() + '〜・中古あり' : '新品・中古あり'}</div>
+          </div>
+        </a>
+        <a href="${mercariUrl}" target="_blank" class="shop-btn btn-mercari">
+          <span class="btn-icon">🏷️</span>
+          <div class="btn-texts">
+            <div class="btn-name">メルカリ</div>
+            <div class="btn-note">${book.price ? '定価¥' + book.price.toLocaleString() + 'より安いかも' : '価格安い順で表示'}</div>
+          </div>
+        </a>
+        <a href="${bookoffUrl}" target="_blank" class="shop-btn btn-bookoff">
+          <span class="btn-icon">📗</span>
+          <div class="btn-texts">
+            <div class="btn-name" style="color:#333">ブックオフ</div>
+            <div class="btn-note" style="color:#555">${book.price ? '定価¥' + book.price.toLocaleString() + 'より安いかも' : '中古・お得価格'}</div>
+          </div>
+        </a>
+      </div>
+    </div>
+
+    <!-- 図書館 -->
+    <div class="lib-section" id="libSection">
+      <div class="lib-header">
+        <span class="lib-header-icon">🏛️</span>
+        <span class="lib-header-text">近くの図書館で借りる（相模原市周辺）</span>
+      </div>
+      ${isbn
+        ? libraries.map(lib => `
+          <div class="lib-row" id="lib-${lib.systemId}">
+            <span class="lib-name">${escHtml(lib.name)}</span>
+            <span class="lib-badge badge-loading">確認中...</span>
+            <a href="https://calil.jp/book/${isbn}/library?systemid=${lib.systemId}" target="_blank" class="lib-link">詳細 ›</a>
+          </div>`).join('')
+        : `<div class="lib-row"><span style="color:var(--muted);font-size:0.85rem">ISBNが不明なため図書館検索できません</span></div>`
+      }
+    </div>
+
+    <button class="back-btn" onclick="document.getElementById('query').value=''; document.getElementById('main').innerHTML='<div class=\\"center-state\\"><div class=\\"icon\\">📖</div><p>本のタイトルや著者名を入力するか、<br>📷 ボタンでバーコードをスキャン</p></div>'">
+      ← 最初に戻る
+    </button>
+  `;
+
+  document.getElementById('main').innerHTML = html;
+
+  // 図書館在庫を確認
+  if (isbn) checkLibraries(isbn, libraries);
+}
+
+// ===== カーリルAPI（図書館在庫） =====
+const CALIL_KEY = 'c8ddf8f3a1a11e95d49e56f5f4a0b8e4'; // デモ用公開キー（calil.jpのデモ）
+
+async function checkLibraries(isbn, libraries) {
+  const systemids = libraries.map(l => l.systemId).join(',');
+
+  try {
+    const data = await calilCheck(isbn, systemids);
+    renderLibStatus(isbn, libraries, data);
+
+    // まだ処理中ならポーリング
+    if (data.continue === 1) {
+      await sleep(2000);
+      await pollCalil(isbn, libraries, systemids, data.session);
+    }
+  } catch(e) {
+    libraries.forEach(lib => {
+      const el = document.getElementById('lib-' + lib.systemId);
+      if (el) el.querySelector('.lib-badge').outerHTML = '<span class="lib-badge badge-unknown">確認できません</span>';
+    });
+  }
+}
+
+function calilCheck(isbn, systemid) {
+  return new Promise((resolve, reject) => {
+    const cb = 'calil_' + Date.now();
+    const url = `https://api.calil.jp/check?appkey=${CALIL_KEY}&isbn=${isbn}&systemid=${encodeURIComponent(systemid)}&format=json&callback=${cb}`;
+    const s = document.createElement('script');
+    s.src = url;
+    window[cb] = d => { delete window[cb]; document.body.removeChild(s); resolve(d); };
+    s.onerror = () => reject(new Error('図書館API通信エラー'));
+    document.body.appendChild(s);
+  });
+}
+
+async function pollCalil(isbn, libraries, systemids, session) {
+  const cb = 'calilp_' + Date.now();
+  const url = `https://api.calil.jp/check?appkey=${CALIL_KEY}&isbn=${isbn}&systemid=${encodeURIComponent(systemids)}&session=${session}&format=json&callback=${cb}`;
+  const data = await new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = url;
+    window[cb] = d => { delete window[cb]; document.body.removeChild(s); resolve(d); };
+    s.onerror = () => reject(new Error('ポーリングエラー'));
+    document.body.appendChild(s);
+  });
+  renderLibStatus(isbn, libraries, data);
+  if (data.continue === 1) {
+    await sleep(2000);
+    await pollCalil(isbn, libraries, systemids, data.session);
+  }
+}
+
+function renderLibStatus(isbn, libraries, data) {
+  const booksData = (data.books || {})[isbn] || {};
+  libraries.forEach(lib => {
+    const el = document.getElementById('lib-' + lib.systemId);
+    if (!el) return;
+    const badge = el.querySelector('.lib-badge');
+    if (!badge) return;
+    const sysData = booksData[lib.systemId];
+    if (!sysData) { badge.className = 'lib-badge badge-unknown'; badge.textContent = '情報なし'; return; }
+    const st = sysData.status;
+    if (st === 'OK') {
+      badge.className = 'lib-badge badge-available'; badge.textContent = '貸出可能 ✓';
+    } else if (st === 'Running') {
+      badge.className = 'lib-badge badge-loading'; badge.textContent = '確認中...';
+    } else if (st === 'Error') {
+      badge.className = 'lib-badge badge-unknown'; badge.textContent = '情報なし';
+    } else {
+      // Lendingなど
+      badge.className = 'lib-badge badge-unavailable'; badge.textContent = '貸出中';
+    }
+  });
+}
+
+// ===== ユーティリティ =====
+function showSpinner(msg) {
+  document.getElementById('main').innerHTML = `
+    <div class="spinner-wrap" style="margin-top:40px;">
+      <div class="spinner"></div>
+      <div class="spinner-label">${escHtml(msg)}</div>
+    </div>`;
+}
+
+function showError(msg) {
+  document.getElementById('main').innerHTML = `<div class="err-box" style="margin-top:20px;">❌ ${escHtml(msg)}</div>`;
+}
+
+function doSearchBack() {
+  const q = document.getElementById('query').value.trim();
+  if (q) doSearch(); else document.getElementById('main').innerHTML = '<div class="center-state"><div class="icon">📖</div><p>本のタイトルや著者名を入力するか、<br>📷 ボタンでバーコードをスキャン</p></div>';
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+function escHtml(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+</script>
+</body>
+</html>
