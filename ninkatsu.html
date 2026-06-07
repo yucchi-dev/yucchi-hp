@@ -561,7 +561,7 @@ function getPredictions() {
   const starts=getPeriodStarts(); if(!starts.length) return null;
   const last=fromStr(starts[starts.length-1]); const cycle=getAvgCycle();
   const nextPeriod=addDays(last,cycle); const ovulation=addDays(nextPeriod,-14);
-  return { nextPeriod, ovulation, cycle, fertileStart:addDays(ovulation,-5), fertileEnd:addDays(ovulation,+1) };
+  return { nextPeriod, ovulation, cycle, fertileStart:addDays(ovulation,-5), fertileEnd:addDays(ovulation,+3) };
 }
 
 /* ===== APP STATE ===== */
@@ -611,7 +611,7 @@ function renderCalendar() {
     box.innerHTML='<div class="cycle-hint">生理日をタップして記録すると、排卵日・タイミングが予測されます 🌸</div>';
   } else if (cycleView==='ninkyo') {
     const ovD=pred.ovulation, fertS=pred.fertileStart, fertE=pred.fertileEnd;
-    const timingS=addDays(ovD,-1), timingE=addDays(ovD,1);
+    const timingS=addDays(ovD,-1), timingE=addDays(ovD,3);
     const dov=daysBetween(new Date(),ovD);
     const ovLabel=dov>0?dov+'日後':dov===0?'今日！':'終了';
     box.innerHTML=`<div class="cycle-info-grid">
@@ -648,7 +648,7 @@ function renderCalendar() {
         const predEnd=addDays(pred.nextPeriod, appData.settings.periodLength-1);
         isPredPeriod = !isPeriod && d>=pred.nextPeriod && d<=predEnd;
         isOv   = !isPeriod && toStr(pred.ovulation)===ds;
-        isTiming = !isPeriod && d>=addDays(pred.ovulation,-1) && d<=addDays(pred.ovulation,1);
+        isTiming = !isPeriod && d>=addDays(pred.ovulation,-1) && d<=addDays(pred.ovulation,3);
         const isFert = !isPeriod && d>=pred.fertileStart && d<=pred.fertileEnd;
         isPMS  = !isPeriod && !isPredPeriod && d>=addDays(pred.nextPeriod,-7) && d<pred.nextPeriod;
 
