@@ -495,9 +495,9 @@
 
 <script>
 /* ===== CONSTANTS ===== */
-const SYMPTOMS = ['🩹 腹痛','🤕 頭痛','😴 眠気','😤 イライラ','💧 おりもの多','🤢 吐き気','😰 むくみ','💕','🌙 不眠','🍫 食欲増','🥶 冷え','💦 おりもの少'];
-// 旧データ互換: '💕 性交あり' → '💕' に正規化して表示
-function normSym(s){ return s==='💕 性交あり'?'💕':s; }
+const SYMPTOMS = ['🩹 腹痛','🤕 頭痛','😴 眠気','😤 イライラ','💧 おりもの多','🤢 吐き気','😰 むくみ','🩵','🌙 不眠','🍫 食欲増','🥶 冷え','💦 おりもの少'];
+// 旧データ互換: '💕 性交あり' / '💕' → '🩵' に正規化して表示
+function normSym(s){ return (s==='💕 性交あり'||s==='💕')?'🩵':s; }
 const WEEKDAYS = ['日','月','火','水','木','金','土'];
 const MEAL_LABELS = { breakfast:'🌅 朝食', lunch:'🌤 昼食', dinner:'🌙 夕食', snack:'☕ 間食' };
 const MEAL_ORDER  = ['breakfast','lunch','dinner','snack'];
@@ -749,7 +749,7 @@ function updatePeriodBtns(ip) {
 function renderSymptomChips() {
   // 旧データで '💕 性交あり' が保存されている場合も選択済みと判定
   document.getElementById('symptom-chips').innerHTML=SYMPTOMS.map(s=>{
-    const on=selSymptoms.has(s)||(s==='💕'&&selSymptoms.has('💕 性交あり'));
+    const on=selSymptoms.has(s)||(s==='🩵'&&(selSymptoms.has('💕 性交あり')||selSymptoms.has('💕')));
     return `<button class="symptom-chip${on?' on':''}" onclick="toggleSym('${s}')">${normSym(s)}</button>`;
   }).join('');
 }
