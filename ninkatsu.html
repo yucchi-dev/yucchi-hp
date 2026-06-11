@@ -376,6 +376,7 @@
       <div class="card">
         <div class="card-title">💾 データ管理</div>
         <div style="display:flex;flex-direction:column;gap:10px;">
+          <button class="btn-primary btn-block" style="background:linear-gradient(135deg,#C8A0E0,#9060C0);" onclick="restoreBackup()">📦 6/11時点のデータを復元</button>
           <button class="btn-primary btn-block" style="background:linear-gradient(135deg,#80C8A0,#55A878);" onclick="exportData()">📤 エクスポート</button>
           <button class="btn-primary btn-block" style="background:linear-gradient(135deg,#90B8E8,#5080C0);" onclick="importData()">📥 インポート</button>
           <button class="btn-primary btn-block" style="background:linear-gradient(135deg,#E0A0A0,#C06060);" onclick="clearData()">🗑 全データ削除</button>
@@ -1099,6 +1100,20 @@ function toggleApiKeyVisibility() {
   inp.type=inp.type==='password'?'text':'password';
   document.getElementById('api-key-eye').textContent=inp.type==='password'?'👁':'🙈';
 }
+// 6/11のデータ消失時の復元用。既存の記録には触れず、足りない分だけ追加する
+async function restoreBackup() {
+  try {
+    const res=await fetch('fukugen.json',{cache:'no-store'});
+    if(!res.ok) throw new Error('ファイルが見つかりません');
+    const b=await res.json();
+    (b.periods||[]).forEach(p=>{ if(!appData.periods.includes(p)) appData.periods.push(p); });
+    ['temperatures','memos','symptoms','sleep','meals'].forEach(k=>{
+      Object.entries(b[k]||{}).forEach(([ds,v])=>{ if(appData[k][ds]==null) appData[k][ds]=v; });
+    });
+    persist(); renderCalendar(); showToast('復元しました 🌸');
+  } catch(e) { showToast('復元エラー: '+e.message); }
+}
+
 function exportData() {
   const blob=new Blob([JSON.stringify(appData,null,2)],{type:'application/json'});
   const url=URL.createObjectURL(blob),a=document.createElement('a');
