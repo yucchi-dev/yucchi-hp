@@ -219,6 +219,7 @@
     .sleep-field input:focus{border-color:var(--pink-300);}
     .sleep-tilde{font-size:14px;color:var(--text-medium);padding-bottom:11px;}
     .sleep-dur{font-size:13px;font-weight:700;color:var(--pink-500);padding-bottom:11px;}
+    .sleep-clear{background:var(--bg);border:1.5px solid var(--pink-100);border-radius:10px;padding:8px 12px;font-size:12px;font-family:inherit;color:var(--text-medium);cursor:pointer;margin-bottom:1px;}
 
     /* Temp modal */
     .temp-modal-row{display:flex;align-items:center;gap:8px;}
@@ -445,6 +446,7 @@
             <input type="time" id="modal-sleep-end" onfocus="prefillSleep(this,'now')" oninput="updateSleepDur()">
           </div>
           <span class="sleep-dur" id="modal-sleep-dur"></span>
+          <button class="sleep-clear" onclick="clearSleep()">✕ クリア</button>
         </div>
       </div>
       <div class="modal-section">
@@ -587,6 +589,11 @@ function updateSleepDur() {
   const s=document.getElementById('modal-sleep-start').value, e=document.getElementById('modal-sleep-end').value;
   const h=sleepHours(s,e);
   document.getElementById('modal-sleep-dur').textContent=h!=null?h+'時間':'';
+}
+function clearSleep() {
+  document.getElementById('modal-sleep-start').value='';
+  document.getElementById('modal-sleep-end').value='';
+  updateSleepDur();
 }
 // 空欄をタップしたときの基準値: 就寝→0:00 / 起床→今の時刻（5分単位に丸め）
 function prefillSleep(inp,base) {
