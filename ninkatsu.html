@@ -433,12 +433,12 @@
         <div class="sleep-row">
           <div class="sleep-field">
             <label>就寝</label>
-            <input type="time" id="modal-sleep-start" oninput="updateSleepDur()">
+            <input type="time" id="modal-sleep-start" onfocus="prefillSleep(this,'zero')" oninput="updateSleepDur()">
           </div>
           <span class="sleep-tilde">〜</span>
           <div class="sleep-field">
             <label>起床</label>
-            <input type="time" id="modal-sleep-end" oninput="updateSleepDur()">
+            <input type="time" id="modal-sleep-end" onfocus="prefillSleep(this,'now')" oninput="updateSleepDur()">
           </div>
           <span class="sleep-dur" id="modal-sleep-dur"></span>
         </div>
@@ -583,6 +583,17 @@ function updateSleepDur() {
   const s=document.getElementById('modal-sleep-start').value, e=document.getElementById('modal-sleep-end').value;
   const h=sleepHours(s,e);
   document.getElementById('modal-sleep-dur').textContent=h!=null?h+'時間':'';
+}
+// 空欄をタップしたときの基準値: 就寝→0:00 / 起床→今の時刻（5分単位に丸め）
+function prefillSleep(inp,base) {
+  if(inp.value) return;
+  if(base==='now') {
+    const n=new Date(); let mins=Math.round((n.getHours()*60+n.getMinutes())/5)*5%1440;
+    inp.value=String(Math.floor(mins/60)).padStart(2,'0')+':'+String(mins%60).padStart(2,'0');
+  } else {
+    inp.value='00:00';
+  }
+  updateSleepDur();
 }
 
 /* ===== PERIOD ANALYSIS ===== */
