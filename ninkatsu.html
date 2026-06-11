@@ -208,6 +208,15 @@
     .symptom-chip{padding:7px 13px;border-radius:20px;border:1.5px solid var(--pink-100);background:#fff;font-size:12px;font-family:inherit;cursor:pointer;color:var(--text-medium);transition:all .2s;}
     .symptom-chip.on{border-color:var(--pink-400);background:var(--pink-50);color:var(--pink-500);font-weight:600;}
 
+    /* Sleep modal */
+    .sleep-row{display:flex;align-items:flex-end;gap:8px;flex-wrap:wrap;}
+    .sleep-field{display:flex;flex-direction:column;gap:4px;}
+    .sleep-field label{font-size:11px;color:var(--text-medium);font-weight:500;}
+    .sleep-field input{width:110px;border:1.5px solid var(--pink-100);border-radius:10px;padding:9px 10px;font-size:16px;font-family:inherit;color:var(--text-dark);background:var(--bg);outline:none;transition:border-color .2s;}
+    .sleep-field input:focus{border-color:var(--pink-300);}
+    .sleep-tilde{font-size:14px;color:var(--text-medium);padding-bottom:11px;}
+    .sleep-dur{font-size:13px;font-weight:700;color:var(--pink-500);padding-bottom:11px;}
+
     /* Temp modal */
     .temp-modal-row{display:flex;align-items:center;gap:8px;}
     .temp-modal-row input{width:110px;border:1.5px solid var(--pink-100);border-radius:10px;padding:10px 12px;font-size:18px;font-family:inherit;color:var(--text-dark);background:var(--bg);outline:none;transition:border-color .2s;}
@@ -420,6 +429,21 @@
         </div>
       </div>
       <div class="modal-section">
+        <div class="modal-section-title">😴 睡眠（起きた日に記録）</div>
+        <div class="sleep-row">
+          <div class="sleep-field">
+            <label>就寝</label>
+            <input type="time" id="modal-sleep-start" oninput="updateSleepDur()">
+          </div>
+          <span class="sleep-tilde">〜</span>
+          <div class="sleep-field">
+            <label>起床</label>
+            <input type="time" id="modal-sleep-end" oninput="updateSleepDur()">
+          </div>
+          <span class="sleep-dur" id="modal-sleep-dur"></span>
+        </div>
+      </div>
+      <div class="modal-section">
         <div class="modal-section-title">💊 体調・症状</div>
         <div class="symptom-chips" id="symptom-chips"></div>
       </div>
@@ -515,8 +539,9 @@ const NUTRIENTS = [
 /* ===== DATA ===== */
 let appData = (() => {
   try { const s = localStorage.getItem('ninkatsu_v2'); if(s) return JSON.parse(s); } catch(_) {}
-  return { periods:[], temperatures:{}, memos:{}, symptoms:{}, meals:{}, settings:{ cycleLength:28, periodLength:5, claudeApiKey:'' } };
+  return { periods:[], temperatures:{}, memos:{}, symptoms:{}, meals:{}, sleep:{}, settings:{ cycleLength:28, periodLength:5, claudeApiKey:'' } };
 })();
+if(!appData.sleep) appData.sleep={};
 
 // migrate from v1
 (() => {
@@ -543,6 +568,22 @@ function fromStr(s) { return new Date(s+'T00:00:00'); }
 function addDays(d,n) { const r=new Date(d); r.setDate(r.getDate()+n); return r; }
 function daysBetween(a,b) { return Math.round((b-a)/86400000); }
 function uid() { return Math.random().toString(36).slice(2,10); }
+
+/* ===== SLEEP UTILS ===== */
+// "23:30"〜"07:00" のように日をまたぐ場合は翌日扱いで計算
+function sleepHours(start,end) {
+  if(!start||!end) return null;
+  const [sh,sm]=start.split(':').map(Number), [eh,em]=end.split(':').map(Number);
+  let mins=(eh*60+em)-(sh*60+sm);
+  if(mins<=0) mins+=1440;
+  return Math.round(mins/60*10)/10;
+}
+function fmtSleepTime(t){ const [h,m]=t.split(':'); return m==='00'?parseInt(h)+'時':parseInt(h)+'時'+m+'分'; }
+function updateSleepDur() {
+  const s=document.getElementById('modal-sleep-start').value, e=document.getElementById('modal-sleep-end').value;
+  const h=sleepHours(s,e);
+  document.getElementById('modal-sleep-dur').textContent=h!=null?h+'時間':'';
+}
 
 /* ===== PERIOD ANALYSIS ===== */
 function getPeriodStarts() {
@@ -668,8 +709,11 @@ function renderCalendar() {
       const hasMeal=!!(appData.meals[ds]&&appData.meals[ds].length);
       const memoRaw=appData.memos[ds]||'';
       const symsRaw=appData.symptoms[ds]||[];
-      // セル内テキスト: メモ優先、なければ症状名（「性交あり」は💕に統一）
-      const cellNoteText=(memoRaw.replace(/\n/g,' ')||symsRaw.map(s=>{const n=normSym(s);const p=n.split(' ');return p.length>1?p.slice(1).join(''):p[0];}).join(' ')).trim();
+      // セル内テキスト: 睡眠＋（メモ優先、なければ症状名）
+      const slp=appData.sleep[ds];
+      const slpTxt=slp?'😴'+sleepHours(slp.start,slp.end)+'h':'';
+      const noteBody=(memoRaw.replace(/\n/g,' ')||symsRaw.map(s=>{const n=normSym(s);const p=n.split(' ');return p.length>1?p.slice(1).join(''):p[0];}).join(' ')).trim();
+      const cellNoteText=[slpTxt,noteBody].filter(Boolean).join(' ');
 
       // Icon in center
       let icon='';
@@ -702,12 +746,16 @@ function renderCalMemos(year, month) {
     const ds = year+'-'+String(month+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
     const memo = appData.memos[ds] || '';
     const syms = appData.symptoms[ds] || [];
-    if (memo || syms.length) entries.push({ ds, d, memo, syms });
+    const slp = appData.sleep[ds] || null;
+    if (memo || syms.length || slp) entries.push({ ds, d, memo, syms, slp });
   }
   if (!entries.length) { el.innerHTML = ''; return; }
   const items = entries.map(e => {
     const dt = fromStr(e.ds);
     const dateStr = (month+1)+'月'+e.d+'日（'+WEEKDAYS[dt.getDay()]+'）';
+    const slpHtml = e.slp
+      ? '<div class="cal-memo-syms"><span class="cal-memo-sym">😴 '+fmtSleepTime(e.slp.start)+'〜'+fmtSleepTime(e.slp.end)+'（'+sleepHours(e.slp.start,e.slp.end)+'時間）</span></div>'
+      : '';
     const symsHtml = e.syms.length
       ? '<div class="cal-memo-syms">'+e.syms.map(s=>'<span class="cal-memo-sym">'+normSym(s)+'</span>').join('')+'</div>'
       : '';
@@ -716,7 +764,7 @@ function renderCalMemos(year, month) {
       : '';
     return '<div class="cal-memo-item" onclick="openDayModal(\''+e.ds+'\')">'
       +'<div class="cal-memo-item-date">'+dateStr+'</div>'
-      +symsHtml+memoHtml
+      +slpHtml+symsHtml+memoHtml
       +'</div>';
   }).join('');
   el.innerHTML = '<div class="cal-memo-title">📝 この月のメモ・記録</div>'+items;
@@ -728,6 +776,10 @@ function openDayModal(ds) {
   document.getElementById('modal-date-title').textContent=(d.getMonth()+1)+'月'+d.getDate()+'日（'+WEEKDAYS[d.getDay()]+'）';
   updatePeriodBtns(appData.periods.includes(ds));
   document.getElementById('modal-temp').value=appData.temperatures[ds]?appData.temperatures[ds].toFixed(2):'';
+  const slp=appData.sleep[ds]||{};
+  document.getElementById('modal-sleep-start').value=slp.start||'';
+  document.getElementById('modal-sleep-end').value=slp.end||'';
+  updateSleepDur();
   selSymptoms=new Set(appData.symptoms[ds]||[]);
   renderSymptomChips();
   document.getElementById('modal-memo').value=appData.memos[ds]||'';
@@ -758,6 +810,8 @@ function saveDay() {
   if(!selDate) return;
   const tv=parseFloat(document.getElementById('modal-temp').value);
   if(!isNaN(tv)&&tv>=35&&tv<=40) appData.temperatures[selDate]=tv; else delete appData.temperatures[selDate];
+  const ss=document.getElementById('modal-sleep-start').value, se=document.getElementById('modal-sleep-end').value;
+  if(ss&&se) appData.sleep[selDate]={start:ss,end:se}; else delete appData.sleep[selDate];
   if(selSymptoms.size) appData.symptoms[selDate]=[...selSymptoms]; else delete appData.symptoms[selDate];
   const memo=document.getElementById('modal-memo').value.trim();
   if(memo) appData.memos[selDate]=memo; else delete appData.memos[selDate];
@@ -1038,11 +1092,11 @@ function exportData() {
 }
 function importData() {
   const inp=document.createElement('input');inp.type='file';inp.accept='.json';
-  inp.onchange=e=>{const file=e.target.files[0];if(!file)return;const r=new FileReader();r.onload=ev=>{try{const d=JSON.parse(ev.target.result);if(d.periods&&d.settings){appData=d;if(!appData.meals)appData.meals={};persist();renderCalendar();showToast('インポートしました 🌸');}else showToast('ファイルが正しくありません');}catch(_){showToast('読み込みエラー');}};r.readAsText(file);};inp.click();
+  inp.onchange=e=>{const file=e.target.files[0];if(!file)return;const r=new FileReader();r.onload=ev=>{try{const d=JSON.parse(ev.target.result);if(d.periods&&d.settings){appData=d;if(!appData.meals)appData.meals={};if(!appData.sleep)appData.sleep={};persist();renderCalendar();showToast('インポートしました 🌸');}else showToast('ファイルが正しくありません');}catch(_){showToast('読み込みエラー');}};r.readAsText(file);};inp.click();
 }
 function clearData() {
   if(!confirm('全データを削除しますか？この操作は元に戻せません。'))return;
-  appData={periods:[],temperatures:{},memos:{},symptoms:{},meals:{},settings:{cycleLength:28,periodLength:5,claudeApiKey:''}};
+  appData={periods:[],temperatures:{},memos:{},symptoms:{},meals:{},sleep:{},settings:{cycleLength:28,periodLength:5,claudeApiKey:''}};
   persist();renderCalendar();showToast('削除しました');
 }
 
