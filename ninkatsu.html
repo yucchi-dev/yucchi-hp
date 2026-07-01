@@ -1054,41 +1054,54 @@ function parseAI(raw) {
 }
 
 /* ===== TEMPERATURE ===== */
-function changeChartMonth(dir) { chartViewDate.setDate(1); chartViewDate.setMonth(chartViewDate.getMonth()+dir); renderTempTab(); }
+const CHART_DAYS=30;                 // グラフに表示する日数（連続した窓）
+let chartEndDate=new Date();         // 窓の右端（この日まで表示）
+function fmtMD(d){ return (d.getMonth()+1)+'/'+d.getDate(); }
+function changeChartMonth(dir) { chartEndDate=addDays(chartEndDate, dir*14); renderTempTab(); }  // ‹›で2週間ずつスクロール
 function renderTempTab() {
-  const y=chartViewDate.getFullYear(), m=chartViewDate.getMonth();
-  document.getElementById('chart-month-label').textContent=y+'年'+(m+1)+'月';
   const di=document.getElementById('temp-date-input'); if(!di.value) di.value=toStr(new Date());
-  drawChart(y,m); renderTempList(y,m);
+  drawChart(); renderTempList();
 }
-function drawChart(year,month) {
+function drawChart() {
   const svgEl=document.getElementById('temp-chart'), W=360,H=180, pL=40,pR=10,pT=12,pB=28, cW=W-pL-pR,cH=H-pT-pB;
-  const dim=new Date(year,month+1,0).getDate(), minT=35.5,maxT=37.5;
-  const data=[]; for(let d=1;d<=dim;d++){const ds=year+'-'+String(month+1).padStart(2,'0')+'-'+String(d).padStart(2,'0'); const t=appData.temperatures[ds]; if(t!=null)data.push({day:d,t});}
-  const xS=d=>pL+(d-1)/(dim-1)*cW, yS=t=>pT+(1-(t-minT)/(maxT-minT))*cH;
+  const minT=35.5,maxT=37.5;
+  const end=fromStr(toStr(chartEndDate)), start=addDays(end,-(CHART_DAYS-1));
+  document.getElementById('chart-month-label').textContent=fmtMD(start)+'〜'+fmtMD(end);
+  // 窓内の日を走査（月をまたいで連続）
+  const data=[];
+  for(let i=0;i<CHART_DAYS;i++){ const d=addDays(start,i); const t=appData.temperatures[toStr(d)]; if(t!=null) data.push({i,t}); }
+  const xS=i=>pL+(CHART_DAYS<=1?0:i/(CHART_DAYS-1))*cW, yS=t=>pT+(1-(t-minT)/(maxT-minT))*cH;
   let s='';
   const yB=yS(36.7);
   s+=`<rect x="${pL}" y="${pT}" width="${cW}" height="${yB-pT}" fill="#FFF0F5"/>`;
   s+=`<rect x="${pL}" y="${yB}" width="${cW}" height="${pT+cH-yB}" fill="#EEF4FF"/>`;
   [35.5,36.0,36.5,36.7,37.0,37.5].forEach(t=>{const y=yS(t),base=t===36.7;s+=`<line x1="${pL}" y1="${y}" x2="${pL+cW}" y2="${y}" stroke="${base?'#FFB3D1':'#F0D8E8'}" stroke-width="${base?1.5:.5}" stroke-dasharray="${base?'4,3':''}"/>`;s+=`<text x="${pL-3}" y="${y+3.5}" text-anchor="end" font-size="8" fill="#C8A8C0">${t.toFixed(1)}</text>`;});
-  [1,5,10,15,20,25,dim].filter((v,i,a)=>a.indexOf(v)===i).forEach(d=>{if(d<=dim)s+=`<text x="${xS(d).toFixed(1)}" y="${pT+cH+16}" text-anchor="middle" font-size="8" fill="#C8A8C0">${d}</text>`;});
-  if(data.length>1)s+=`<path d="${data.map((p,i)=>`${i?'L':'M'}${xS(p.day).toFixed(1)},${yS(p.t).toFixed(1)}`).join(' ')}" stroke="#F4A7B9" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`;
-  data.forEach(p=>s+=`<circle cx="${xS(p.day).toFixed(1)}" cy="${yS(p.t).toFixed(1)}" r="4" fill="${p.t>=36.7?'#E85070':'#5090D8'}" stroke="white" stroke-width="1.5"/>`);
-  if(!data.length)s+=`<text x="${W/2}" y="${H/2}" text-anchor="middle" font-size="12" fill="#D0A8C0">体温データがありません</text>`;
+  // 縦軸ラベル：5日ごとにM/D、月初は区切り線＋強調
+  for(let i=0;i<CHART_DAYS;i++){
+    const d=addDays(start,i), first=d.getDate()===1;
+    if(first){ s+=`<line x1="${xS(i).toFixed(1)}" y1="${pT}" x2="${xS(i).toFixed(1)}" y2="${pT+cH}" stroke="#F0D0E0" stroke-width="1"/>`; }
+    if(i%5===0||first){ s+=`<text x="${xS(i).toFixed(1)}" y="${pT+cH+16}" text-anchor="middle" font-size="8" fill="${first?'#E06898':'#C8A8C0'}" font-weight="${first?'700':'400'}">${fmtMD(d)}</text>`; }
+  }
+  if(data.length>1)s+=`<path d="${data.map((p,i)=>`${i?'L':'M'}${xS(p.i).toFixed(1)},${yS(p.t).toFixed(1)}`).join(' ')}" stroke="#F4A7B9" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`;
+  data.forEach(p=>s+=`<circle cx="${xS(p.i).toFixed(1)}" cy="${yS(p.t).toFixed(1)}" r="4" fill="${p.t>=36.7?'#E85070':'#5090D8'}" stroke="white" stroke-width="1.5"/>`);
+  if(!data.length)s+=`<text x="${W/2}" y="${H/2}" text-anchor="middle" font-size="12" fill="#D0A8C0">この期間の体温データはありません</text>`;
   svgEl.setAttribute('viewBox',`0 0 ${W} ${H}`); svgEl.innerHTML=s;
 }
 function addTemperature() {
   const ds=document.getElementById('temp-date-input').value, raw=document.getElementById('temp-val-input').value;
   if(!ds||!raw){showToast('日付と体温を入力してください');return;}
   const t=parseFloat(raw); if(isNaN(t)||t<35||t>40){showToast('体温は35〜40℃で入力してください');return;}
-  appData.temperatures[ds]=t; persist(); document.getElementById('temp-val-input').value=''; renderTempTab(); showToast('体温を記録しました 🌡');
+  appData.temperatures[ds]=t; persist();
+  chartEndDate=fromStr(ds);  // 入力した日が見える位置へ窓を移動
+  document.getElementById('temp-val-input').value=''; renderTempTab(); showToast('体温を記録しました 🌡');
 }
-function renderTempList(year,month) {
-  const dim=new Date(year,month+1,0).getDate(), entries=[];
-  for(let d=dim;d>=1;d--){const ds=year+'-'+String(month+1).padStart(2,'0')+'-'+String(d).padStart(2,'0'); if(appData.temperatures[ds]!=null)entries.push({ds,d,t:appData.temperatures[ds]});}
+// 体温リストは月区切りなし・全期間を新しい順に表示
+function renderTempList() {
+  const entries=Object.keys(appData.temperatures).filter(ds=>appData.temperatures[ds]!=null).sort().reverse()
+    .map(ds=>({ds,t:appData.temperatures[ds]}));
   const el=document.getElementById('temp-list');
-  if(!entries.length){el.innerHTML='<div class="empty-state"><div class="empty-icon">🌡️</div><div class="empty-txt">この月の体温データはありません</div></div>';return;}
-  el.innerHTML=entries.map(e=>`<div class="temp-entry"><div class="temp-entry-date">${month+1}月${e.d}日（${WEEKDAYS[fromStr(e.ds).getDay()]}）</div><div style="display:flex;align-items:center;gap:8px;"><div class="temp-entry-val">${e.t.toFixed(2)}<span>℃</span></div><button class="del-btn" onclick="deleteTemp('${e.ds}')">✕</button></div></div>`).join('');
+  if(!entries.length){el.innerHTML='<div class="empty-state"><div class="empty-icon">🌡️</div><div class="empty-txt">体温データがありません</div></div>';return;}
+  el.innerHTML=entries.map(e=>{const d=fromStr(e.ds);return `<div class="temp-entry"><div class="temp-entry-date">${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日（${WEEKDAYS[d.getDay()]}）</div><div style="display:flex;align-items:center;gap:8px;"><div class="temp-entry-val">${e.t.toFixed(2)}<span>℃</span></div><button class="del-btn" onclick="deleteTemp('${e.ds}')">✕</button></div></div>`;}).join('');
 }
 function deleteTemp(ds) { delete appData.temperatures[ds]; persist(); renderTempTab(); }
 
