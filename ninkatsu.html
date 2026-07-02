@@ -105,6 +105,7 @@
     .yb-ok{background:#E6F7EC;}
     .yb-light{background:#FFF0F5;}
     .yb-caution{background:#FFF3E0;}
+    .yb-rest{background:#EFEAF4;opacity:.85;}
 
     /* Legend */
     .legend{display:flex;flex-wrap:wrap;gap:6px;padding:8px 12px 12px;}
@@ -727,15 +728,22 @@ function setCycleView(v) {
   document.getElementById('cv-yoga').classList.toggle('active', v==='yoga');
   renderCalendar();
 }
-// 周期フェーズからヨガの目安を返す（あくまで一般的な目安。実際は主治医に確認）
+// 周期フェーズからヨガの目安を返す（妊娠に影響しないよう厳しめ運用）
+// 方針：排卵後は妊娠の可能性があるため完全お休み。「予測」ではなく実際に生理が記録されたら再開
 function yogaAdvice(d, pred, isPeriod) {
-  if(!pred) return null;
-  if(isPeriod) return {level:'light', icon:'🌸', label:'生理中', note:'骨盤まわりをゆるめる軽いヨガを。逆転ポーズや激しい動きは控えめに。'};
-  // 高温期＝排卵後〜次の生理。妊娠の可能性がある時期はホットヨガ（高温環境）は特に慎重に
-  const afterOv = d>addDays(pred.ovulation,0) && d<pred.nextPeriod;
-  const inFertile = d>=pred.fertileStart && d<=pred.fertileEnd;
-  if(inFertile||afterOv) return {level:'caution', icon:'⚠️', label:'高温期・妊娠可能期', note:'妊娠の可能性がある時期。ホットヨガ（高温環境）は体温を上げるため控えめが安心。常温ヨガの軽めならOKの目安。'};
-  return {level:'ok', icon:'🧘', label:'卵胞期', note:'体調が安定しやすい時期。ホットヨガもOKの目安。しっかり動けます。'};
+  if(isPeriod) return {level:'light', icon:'🌸', label:'生理中・再開OK', note:'ヨガ再開OK。まずは軽めから。体調がつらい日は休んで。'};
+  const starts=getPeriodStarts(); if(!starts.length) return null;
+  const prev=starts.filter(s=>fromStr(s)<=d).pop();
+  if(!prev) return null;  // 記録が始まる前の日
+  // この日が属する周期の排卵日：次の実記録の生理から逆算、なければ予測値
+  const next=starts.find(s=>fromStr(s)>d);
+  let ov=null;
+  if(next) ov=addDays(fromStr(next),-14);
+  else if(pred) ov=pred.ovulation;
+  if(!ov) return null;
+  if(d>ov) return {level:'rest', icon:'⛔', label:'お休み（高温期）', note:'排卵後は妊娠の可能性があるためヨガは完全お休み。次の生理が実際に来たら再開です。'};
+  if(d>=addDays(ov,-5)) return {level:'caution', icon:'⚠️', label:'妊娠可能期', note:'ホットヨガは×。やるなら常温ヨガの軽めまで。逆転・ねじりの強いポーズも控えめに。'};
+  return {level:'ok', icon:'🧘', label:'卵胞期', note:'一番しっかり動ける時期。ホットヨガもOKの目安。'};
 }
 
 function fmtDate(d) {
@@ -775,8 +783,8 @@ function renderCalendar() {
     box.innerHTML=`<div style="font-size:12px;line-height:1.7;">
       <div style="font-weight:700;margin-bottom:4px;">🧘 今日のヨガ目安：${todayAdv?todayAdv.icon+' '+todayAdv.label:'—'}</div>
       <div style="color:var(--text-medium);">${todayAdv?todayAdv.note:'生理日を記録すると目安が表示されます'}</div>
-      <div style="margin-top:8px;display:flex;gap:10px;flex-wrap:wrap;font-size:10.5px;color:var(--text-medium);">
-        <span>🧘 しっかりOK</span><span>🌸 軽めに</span><span>⚠️ ホットヨガ控えめ</span>
+      <div style="margin-top:8px;display:flex;gap:8px 12px;flex-wrap:wrap;font-size:10.5px;color:var(--text-medium);">
+        <span>🧘 しっかりOK（ホットも）</span><span>🌸 生理中・軽く再開</span><span>⚠️ 常温の軽めのみ</span><span>⛔ お休み（次の生理まで）</span>
       </div>
       <div style="margin-top:6px;font-size:10px;color:var(--text-light);">※一般的な目安です。実際の可否は主治医にご相談ください</div>
     </div>`;
