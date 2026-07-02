@@ -100,6 +100,12 @@
     /* Ovulation circle */
     .ov-shape{width:22px;height:22px;border:2.5px solid #F4A830;border-radius:50%;flex-shrink:0;}
 
+    /* Yoga badge */
+    .yoga-badge{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;}
+    .yb-ok{background:#E6F7EC;}
+    .yb-light{background:#FFF0F5;}
+    .yb-caution{background:#FFF3E0;}
+
     /* Legend */
     .legend{display:flex;flex-wrap:wrap;gap:6px;padding:8px 12px 12px;}
     .legend-item{display:flex;align-items:center;gap:4px;font-size:11.5px;color:var(--text-medium);}
@@ -206,6 +212,13 @@
     .period-btn.active-yes{border-color:var(--red-period);background:var(--red-light);color:#C03030;}
     .period-btn.active-no{border-color:var(--pink-100);background:var(--bg);color:var(--text-medium);}
 
+    /* Test result toggle */
+    .test-result-toggle{display:flex;gap:8px;}
+    .test-btn{flex:1;padding:10px 4px;border-radius:12px;border:2px solid var(--pink-100);background:#fff;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;color:var(--text-medium);transition:all .2s;}
+    .test-btn.on-neg{border-color:#9CB0D0;background:#EEF3FB;color:#4E6A96;}
+    .test-btn.on-faint{border-color:#E6B85C;background:#FFF7E8;color:#A9791E;}
+    .test-btn.on-pos{border-color:var(--pink-400);background:var(--pink-50);color:var(--pink-500);}
+
     /* Symptom chips */
     .symptom-chips{display:flex;flex-wrap:wrap;gap:8px;}
     .symptom-chip{padding:7px 13px;border-radius:20px;border:1.5px solid var(--pink-100);background:#fff;font-size:12px;font-family:inherit;cursor:pointer;color:var(--text-medium);transition:all .2s;}
@@ -283,7 +296,8 @@
       </div>
       <div class="cycle-toggle">
         <button class="cycle-tab active" id="cv-ninkyo" onclick="setCycleView('ninkyo')">妊娠可能性</button>
-        <button class="cycle-tab" id="cv-pms" onclick="setCycleView('pms')">PMS注意報</button>
+        <button class="cycle-tab" id="cv-pms" onclick="setCycleView('pms')">PMS</button>
+        <button class="cycle-tab" id="cv-yoga" onclick="setCycleView('yoga')">🧘ヨガ</button>
       </div>
     </div>
     <div id="cycle-info-box" class="cycle-info-box"></div>
@@ -344,8 +358,38 @@
           <button class="chart-nav-btn" onclick="changeChartMonth(1)">›</button>
         </div>
         <svg id="temp-chart" width="100%" height="180"></svg>
+        <div class="legend" style="padding:6px 2px 0;">
+          <div class="legend-item"><span style="width:10px;height:10px;border-radius:50%;background:#E85070;display:inline-block;"></span>高温期側</div>
+          <div class="legend-item"><span style="width:10px;height:10px;border-radius:50%;background:#5090D8;display:inline-block;"></span>低温期側</div>
+          <div class="legend-item"><span style="width:12px;height:3px;background:#F4A7B9;display:inline-block;"></span>生理日</div>
+          <div class="legend-item"><span style="width:12px;height:10px;background:#FFF6D6;border:1px solid #E8C860;display:inline-block;"></span>妊娠可能期</div>
+          <div class="legend-item"><span style="width:2px;height:12px;background:#F0A020;display:inline-block;"></span>排卵予測</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">😴 睡眠時間の推移</div>
+        <svg id="sleep-chart" width="100%" height="150"></svg>
       </div>
       <div id="temp-list"></div>
+    </div>
+  </div>
+
+  <!-- ── TEST（検査薬）──────────────────────────── -->
+  <div id="tab-test" class="tab-panel">
+    <div class="section-pad">
+      <div class="card" id="preg-timing-card">
+        <div class="card-title">🧪 妊娠検査薬 いつ検査できる？</div>
+        <div id="preg-timing-body"></div>
+      </div>
+      <div class="card" id="lh-timing-card">
+        <div class="card-title">🥚 排卵検査薬（LH） いつ検査する？</div>
+        <div id="lh-timing-body"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">📋 検査の記録</div>
+        <p class="info-text" style="margin-bottom:10px;">カレンダーの日付をタップ →「検査薬」の欄で記録できます。ここは記録の一覧です。</p>
+        <div id="test-log"></div>
+      </div>
     </div>
   </div>
 
@@ -375,17 +419,19 @@
         </div>
       </div>
       <div class="card">
-        <div class="card-title">💾 データ管理</div>
+        <div class="card-title">💾 データ管理・バックアップ</div>
+        <p class="info-text" style="margin-bottom:10px;">📤 エクスポートで控えを取り、自分にLINEなどで送っておくと、万が一のとき📥インポートで元に戻せます。月イチのバックアップがおすすめ。</p>
         <div style="display:flex;flex-direction:column;gap:10px;">
-          <button class="btn-primary btn-block" style="background:linear-gradient(135deg,#C8A0E0,#9060C0);" onclick="restoreBackup()">📦 6/11時点のデータを復元</button>
-          <button class="btn-primary btn-block" style="background:linear-gradient(135deg,#80C8A0,#55A878);" onclick="exportData()">📤 エクスポート</button>
-          <button class="btn-primary btn-block" style="background:linear-gradient(135deg,#90B8E8,#5080C0);" onclick="importData()">📥 インポート</button>
+          <button class="btn-primary btn-block" style="background:linear-gradient(135deg,#80C8A0,#55A878);" onclick="exportData()">📤 エクスポート（控えを保存）</button>
+          <button class="btn-primary btn-block" style="background:linear-gradient(135deg,#90B8E8,#5080C0);" onclick="importData()">📥 インポート（控えから復元）</button>
+          <button class="btn-primary btn-block" style="background:linear-gradient(135deg,#C8A0E0,#9060C0);" onclick="restoreAutoBackup()">♻️ 自動バックアップから復元</button>
+          <button class="btn-primary btn-block" style="background:linear-gradient(135deg,#D8C0EC,#A888C8);font-size:12px;" onclick="restoreBackup()">📦 6/11時点のデータを復元</button>
           <button class="btn-primary btn-block" style="background:linear-gradient(135deg,#E0A0A0,#C06060);" onclick="clearData()">🗑 全データ削除</button>
         </div>
       </div>
       <div class="card">
         <div class="card-title">🌸 このアプリについて</div>
-        <p class="info-text">生理周期・排卵予測・基礎体温・食事栄養管理をまとめて。データはこの端末のブラウザのみに保存されます。</p>
+        <p class="info-text">生理周期・排卵予測・基礎体温・睡眠・検査薬をまとめて記録。データはこの端末のブラウザのみに保存されます（保存のたびに端末内で自動バックアップも取っています）。</p>
       </div>
     </div>
   </div>
@@ -396,11 +442,11 @@
   <button class="tab-btn active" id="nav-calendar" onclick="switchTab('calendar')">
     <span class="tab-icon">📅</span><span class="tab-label">カレンダー</span>
   </button>
-  <button class="tab-btn" id="nav-food" onclick="switchTab('food')">
-    <span class="tab-icon">🍽️</span><span class="tab-label">食事</span>
-  </button>
   <button class="tab-btn" id="nav-temp" onclick="switchTab('temp')">
-    <span class="tab-icon">🌡️</span><span class="tab-label">体温</span>
+    <span class="tab-icon">📈</span><span class="tab-label">グラフ</span>
+  </button>
+  <button class="tab-btn" id="nav-test" onclick="switchTab('test')">
+    <span class="tab-icon">🧪</span><span class="tab-label">検査</span>
   </button>
   <button class="tab-btn" id="nav-settings" onclick="switchTab('settings')">
     <span class="tab-icon">⚙️</span><span class="tab-label">設定</span>
@@ -448,6 +494,14 @@
           <span class="sleep-dur" id="modal-sleep-dur"></span>
           <button class="sleep-clear" onclick="clearSleep()">✕ クリア</button>
         </div>
+      </div>
+      <div class="modal-section">
+        <div class="modal-section-title">🧪 妊娠検査薬</div>
+        <div class="test-result-toggle" id="preg-test-toggle"></div>
+      </div>
+      <div class="modal-section">
+        <div class="modal-section-title">🥚 排卵検査薬（LH）</div>
+        <div class="test-result-toggle" id="lh-test-toggle"></div>
       </div>
       <div class="modal-section">
         <div class="modal-section-title">💊 体調・症状</div>
@@ -545,9 +599,13 @@ const NUTRIENTS = [
 /* ===== DATA ===== */
 let appData = (() => {
   try { const s = localStorage.getItem('ninkatsu_v2'); if(s) return JSON.parse(s); } catch(_) {}
-  return { periods:[], temperatures:{}, memos:{}, symptoms:{}, meals:{}, sleep:{}, settings:{ cycleLength:28, periodLength:5, claudeApiKey:'' } };
+  return { periods:[], temperatures:{}, memos:{}, symptoms:{}, meals:{}, sleep:{}, pregTests:{}, lhTests:{}, settings:{ cycleLength:28, periodLength:5, claudeApiKey:'', lastBackup:'' } };
 })();
+// 後から追加した項目の穴埋め（既存ユーザー対応）
 if(!appData.sleep) appData.sleep={};
+if(!appData.pregTests) appData.pregTests={};   // 妊娠検査薬: {日付: '陽性'|'陰性'|'うっすら'}
+if(!appData.lhTests) appData.lhTests={};        // 排卵検査薬(LH): {日付: '陽性'|'陰性'|'うっすら'}
+if(!appData.meals) appData.meals={};
 
 // migrate from v1
 (() => {
@@ -566,7 +624,12 @@ if(!appData.sleep) appData.sleep={};
   } catch(_) {}
 })();
 
-function persist() { localStorage.setItem('ninkatsu_v2', JSON.stringify(appData)); }
+function persist() {
+  const json=JSON.stringify(appData);
+  localStorage.setItem('ninkatsu_v2', json);
+  // 自動バックアップ：別キーにも二重保存（アプリ内での誤操作・上書きから守る保険）
+  try { localStorage.setItem('ninkatsu_v2_autobackup', json); } catch(_) {}
+}
 
 /* ===== DATE UTILS ===== */
 function toStr(d) { return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
@@ -631,8 +694,9 @@ function getPredictions() {
 let calViewDate   = new Date();
 let chartViewDate = new Date();
 let foodViewDate  = new Date();
-let cycleView     = 'ninkyo'; // 'ninkyo' | 'pms'
+let cycleView     = 'ninkyo'; // 'ninkyo' | 'pms' | 'yoga'
 let selDate = null, selSymptoms = new Set();
+let selPregTest = null, selLhTest = null;
 let mealTime = 'breakfast', mealMode = 'text';
 let mealPhotoB64 = null, mealPhotoMime = null, mealResultData = null;
 
@@ -642,10 +706,9 @@ function switchTab(name) {
   document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
   document.getElementById('tab-'+name).classList.add('active');
   document.getElementById('nav-'+name).classList.add('active');
-  document.getElementById('add-fab').classList.toggle('show', name==='food');
   if(name==='calendar') renderCalendar();
-  if(name==='food')     renderFoodTab();
   if(name==='temp')     renderTempTab();
+  if(name==='test')     renderTestTab();
   if(name==='settings') loadSettings();
 }
 
@@ -656,7 +719,18 @@ function setCycleView(v) {
   cycleView = v;
   document.getElementById('cv-ninkyo').classList.toggle('active', v==='ninkyo');
   document.getElementById('cv-pms').classList.toggle('active', v==='pms');
+  document.getElementById('cv-yoga').classList.toggle('active', v==='yoga');
   renderCalendar();
+}
+// 周期フェーズからヨガの目安を返す（あくまで一般的な目安。実際は主治医に確認）
+function yogaAdvice(d, pred, isPeriod) {
+  if(!pred) return null;
+  if(isPeriod) return {level:'light', icon:'🌸', label:'生理中', note:'骨盤まわりをゆるめる軽いヨガを。逆転ポーズや激しい動きは控えめに。'};
+  // 高温期＝排卵後〜次の生理。妊娠の可能性がある時期はホットヨガ（高温環境）は特に慎重に
+  const afterOv = d>addDays(pred.ovulation,0) && d<pred.nextPeriod;
+  const inFertile = d>=pred.fertileStart && d<=pred.fertileEnd;
+  if(inFertile||afterOv) return {level:'caution', icon:'⚠️', label:'高温期・妊娠可能期', note:'妊娠の可能性がある時期。ホットヨガ（高温環境）は体温を上げるため控えめが安心。常温ヨガの軽めならOKの目安。'};
+  return {level:'ok', icon:'🧘', label:'卵胞期', note:'体調が安定しやすい時期。ホットヨガもOKの目安。しっかり動けます。'};
 }
 
 function fmtDate(d) {
@@ -683,13 +757,23 @@ function renderCalendar() {
       <div class="ci-item"><span class="ci-label">妊娠可能期間</span><span class="ci-value">${fmtDate(fertS)}〜${fmtDate(fertE)}</span></div>
       <div class="ci-item"><span class="ci-label">♥ 仲良しタイミング</span><span class="ci-value accent">${fmtDate(timingS)}〜${fmtDate(timingE)}</span></div>
     </div>`;
-  } else {
+  } else if (cycleView==='pms') {
     const pmsS=addDays(pred.nextPeriod,-7), pmsE=addDays(pred.nextPeriod,-1);
     const dn=daysBetween(new Date(),pred.nextPeriod);
     const nextLabel=dn>0?dn+'日後':dn===0?'今日':Math.abs(dn)+'日前';
     box.innerHTML=`<div class="cycle-info-grid">
       <div class="ci-item"><span class="ci-label">次回生理予測</span><span class="ci-value pms-color">${fmtDate(pred.nextPeriod)}（${nextLabel}）</span></div>
       <div class="ci-item"><span class="ci-label">PMS注意期間</span><span class="ci-value pms-color">${fmtDate(pmsS)}〜${fmtDate(pmsE)}</span></div>
+    </div>`;
+  } else { // yoga
+    const todayAdv=yogaAdvice(fromStr(today), pred, appData.periods.includes(today));
+    box.innerHTML=`<div style="font-size:12px;line-height:1.7;">
+      <div style="font-weight:700;margin-bottom:4px;">🧘 今日のヨガ目安：${todayAdv?todayAdv.icon+' '+todayAdv.label:'—'}</div>
+      <div style="color:var(--text-medium);">${todayAdv?todayAdv.note:'生理日を記録すると目安が表示されます'}</div>
+      <div style="margin-top:8px;display:flex;gap:10px;flex-wrap:wrap;font-size:10.5px;color:var(--text-medium);">
+        <span>🧘 しっかりOK</span><span>🌸 軽めに</span><span>⚠️ ホットヨガ控えめ</span>
+      </div>
+      <div style="margin-top:6px;font-size:10px;color:var(--text-light);">※一般的な目安です。実際の可否は主治医にご相談ください</div>
     </div>`;
   }
 
@@ -728,7 +812,7 @@ function renderCalendar() {
       const numW   = (isPeriod||isToday)?'700':'500';
       const todayRing = isToday?'box-shadow:inset 0 0 0 2px var(--pink-400);':'';
       const hasTemp=appData.temperatures[ds]!=null;
-      const hasMeal=!!(appData.meals[ds]&&appData.meals[ds].length);
+      const hasTest=appData.pregTests[ds]||appData.lhTests[ds];
       const memoRaw=appData.memos[ds]||'';
       const symsRaw=appData.symptoms[ds]||[];
       // 記録済みの🩵は右上バッジで表示（生理マークと重ならないように）
@@ -739,9 +823,12 @@ function renderCalendar() {
       const noteBody=(memoRaw.replace(/\n/g,' ')||symsRaw.filter(s=>normSym(s)!=='🩵').map(s=>{const n=normSym(s);const p=n.split(' ');return p.length>1?p.slice(1).join(''):p[0];}).join(' ')).trim();
       const cellNoteText=[slpTxt,noteBody].filter(Boolean).join(' ');
 
-      // Icon in center
+      // Icon in center（ヨガ表示中はヨガ目安アイコンを優先）
       let icon='';
-      if      (isPeriod)     icon='<div class="moon-shape"></div>';
+      if (cycleView==='yoga') {
+        const adv=yogaAdvice(d, pred, isPeriod);
+        if(adv) icon=`<div class="yoga-badge yb-${adv.level}">${adv.icon}</div>`;
+      } else if (isPeriod)     icon='<div class="moon-shape"></div>';
       else if (isPredPeriod) icon='<div class="moon-shape moon-pred"></div>';
       else if (isOv)         icon='<div class="ov-shape"></div>';
 
@@ -753,7 +840,7 @@ function renderCalendar() {
         </div>
         <div class="day-icon-area">${icon}</div>
         ${noteHtml}
-        <div class="day-inds">${hasTemp?'🌡':''}${hasMeal?'🍽':''}</div>
+        <div class="day-inds">${hasTemp?'🌡':''}${hasTest?'🧪':''}</div>
       </div>`;
     }
     html+='</div>';
@@ -804,12 +891,25 @@ function openDayModal(ds) {
   document.getElementById('modal-sleep-start').value=slp.start||'';
   document.getElementById('modal-sleep-end').value=slp.end||'';
   updateSleepDur();
+  selPregTest=appData.pregTests[ds]||null;
+  selLhTest=appData.lhTests[ds]||null;
+  renderTestToggles();
   selSymptoms=new Set(appData.symptoms[ds]||[]);
   renderSymptomChips();
   document.getElementById('modal-memo').value=appData.memos[ds]||'';
   document.getElementById('modal-overlay').classList.add('open');
   document.body.style.overflow='hidden';
 }
+// 検査薬の記録ボタン（陰性 / うっすら / 陽性、もう一度押すと解除）
+const TEST_OPTS=[['陰性','neg'],['うっすら','faint'],['陽性','pos']];
+function renderTestToggles() {
+  const build=(cur,fn)=>TEST_OPTS.map(([label,cls])=>
+    `<button class="test-btn${cur===label?' on-'+cls:''}" onclick="${fn}('${label}')">${label}</button>`).join('');
+  document.getElementById('preg-test-toggle').innerHTML=build(selPregTest,'setPregTest');
+  document.getElementById('lh-test-toggle').innerHTML=build(selLhTest,'setLhTest');
+}
+function setPregTest(v){ selPregTest=(selPregTest===v?null:v); renderTestToggles(); }
+function setLhTest(v){ selLhTest=(selLhTest===v?null:v); renderTestToggles(); }
 function closeModal() { document.getElementById('modal-overlay').classList.remove('open'); document.body.style.overflow=''; selDate=null; }
 function handleOverlayClick(e) { if(e.target===document.getElementById('modal-overlay')) closeModal(); }
 function setPeriod(has) {
@@ -837,6 +937,8 @@ function saveDay() {
   const ss=document.getElementById('modal-sleep-start').value, se=document.getElementById('modal-sleep-end').value;
   if(ss&&se) appData.sleep[selDate]={start:ss,end:se}; else delete appData.sleep[selDate];
   if(selSymptoms.size) appData.symptoms[selDate]=[...selSymptoms]; else delete appData.symptoms[selDate];
+  if(selPregTest) appData.pregTests[selDate]=selPregTest; else delete appData.pregTests[selDate];
+  if(selLhTest) appData.lhTests[selDate]=selLhTest; else delete appData.lhTests[selDate];
   const memo=document.getElementById('modal-memo').value.trim();
   if(memo) appData.memos[selDate]=memo; else delete appData.memos[selDate];
   persist(); renderCalendar(); showToast('保存しました 🌸'); closeModal();
@@ -1060,31 +1162,74 @@ function fmtMD(d){ return (d.getMonth()+1)+'/'+d.getDate(); }
 function changeChartMonth(dir) { chartEndDate=addDays(chartEndDate, dir*14); renderTempTab(); }  // ‹›で2週間ずつスクロール
 function renderTempTab() {
   const di=document.getElementById('temp-date-input'); if(!di.value) di.value=toStr(new Date());
-  drawChart(); renderTempList();
+  drawChart(); drawSleepChart(); renderTempList();
+}
+// 過去〜未来の排卵イベントを推定（各生理開始の14日前＝直前周期の排卵、＋次回予測）
+function getOvulationEvents() {
+  const starts=getPeriodStarts(), evs=[];
+  for(let i=1;i<starts.length;i++) evs.push(addDays(fromStr(starts[i]),-14));
+  const pred=getPredictions(); if(pred) evs.push(pred.ovulation);
+  return evs;
 }
 function drawChart() {
   const svgEl=document.getElementById('temp-chart'), W=360,H=180, pL=40,pR=10,pT=12,pB=28, cW=W-pL-pR,cH=H-pT-pB;
   const minT=35.5,maxT=37.5;
   const end=fromStr(toStr(chartEndDate)), start=addDays(end,-(CHART_DAYS-1));
   document.getElementById('chart-month-label').textContent=fmtMD(start)+'〜'+fmtMD(end);
-  // 窓内の日を走査（月をまたいで連続）
   const data=[];
   for(let i=0;i<CHART_DAYS;i++){ const d=addDays(start,i); const t=appData.temperatures[toStr(d)]; if(t!=null) data.push({i,t}); }
+  const idxOf=d=>daysBetween(start,fromStr(toStr(d)));                 // 窓内インデックス
   const xS=i=>pL+(CHART_DAYS<=1?0:i/(CHART_DAYS-1))*cW, yS=t=>pT+(1-(t-minT)/(maxT-minT))*cH;
+  const xClamp=i=>pL+Math.max(0,Math.min(CHART_DAYS-1,i))/(CHART_DAYS-1)*cW;
   let s='';
   const yB=yS(36.7);
   s+=`<rect x="${pL}" y="${pT}" width="${cW}" height="${yB-pT}" fill="#FFF0F5"/>`;
   s+=`<rect x="${pL}" y="${yB}" width="${cW}" height="${pT+cH-yB}" fill="#EEF4FF"/>`;
+  // ▼ 妊娠可能期の帯（排卵−5〜+3日）を薄い黄色で。排卵ズレも見込んで幅を持たせている
+  getOvulationEvents().forEach(ov=>{
+    const fs=idxOf(addDays(ov,-5)), fe=idxOf(addDays(ov,3));
+    if(fe<0||fs>CHART_DAYS-1) return;
+    const x1=xClamp(fs), x2=xClamp(fe);
+    s+=`<rect x="${x1.toFixed(1)}" y="${pT}" width="${(x2-x1).toFixed(1)}" height="${cH}" fill="#FFF6D6" opacity="0.75"/>`;
+  });
   [35.5,36.0,36.5,36.7,37.0,37.5].forEach(t=>{const y=yS(t),base=t===36.7;s+=`<line x1="${pL}" y1="${y}" x2="${pL+cW}" y2="${y}" stroke="${base?'#FFB3D1':'#F0D8E8'}" stroke-width="${base?1.5:.5}" stroke-dasharray="${base?'4,3':''}"/>`;s+=`<text x="${pL-3}" y="${y+3.5}" text-anchor="end" font-size="8" fill="#C8A8C0">${t.toFixed(1)}</text>`;});
+  // ▼ 排卵予測日：オレンジの縦線
+  getOvulationEvents().forEach(ov=>{ const i=idxOf(ov); if(i<0||i>CHART_DAYS-1) return;
+    s+=`<line x1="${xS(i).toFixed(1)}" y1="${pT}" x2="${xS(i).toFixed(1)}" y2="${pT+cH}" stroke="#F0A020" stroke-width="1.5" stroke-dasharray="3,2"/>`;});
   // 縦軸ラベル：5日ごとにM/D、月初は区切り線＋強調
   for(let i=0;i<CHART_DAYS;i++){
     const d=addDays(start,i), first=d.getDate()===1;
     if(first){ s+=`<line x1="${xS(i).toFixed(1)}" y1="${pT}" x2="${xS(i).toFixed(1)}" y2="${pT+cH}" stroke="#F0D0E0" stroke-width="1"/>`; }
     if(i%5===0||first){ s+=`<text x="${xS(i).toFixed(1)}" y="${pT+cH+16}" text-anchor="middle" font-size="8" fill="${first?'#E06898':'#C8A8C0'}" font-weight="${first?'700':'400'}">${fmtMD(d)}</text>`; }
   }
+  // ▼ 生理日：下端のピンクの太線
+  for(let i=0;i<CHART_DAYS;i++){ const d=addDays(start,i); if(appData.periods.includes(toStr(d))){
+    s+=`<line x1="${xS(i).toFixed(1)}" y1="${pT+cH-2}" x2="${xS(i).toFixed(1)}" y2="${pT+cH+2}" stroke="#F4A7B9" stroke-width="4" stroke-linecap="round"/>`;}}
   if(data.length>1)s+=`<path d="${data.map((p,i)=>`${i?'L':'M'}${xS(p.i).toFixed(1)},${yS(p.t).toFixed(1)}`).join(' ')}" stroke="#F4A7B9" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`;
   data.forEach(p=>s+=`<circle cx="${xS(p.i).toFixed(1)}" cy="${yS(p.t).toFixed(1)}" r="4" fill="${p.t>=36.7?'#E85070':'#5090D8'}" stroke="white" stroke-width="1.5"/>`);
   if(!data.length)s+=`<text x="${W/2}" y="${H/2}" text-anchor="middle" font-size="12" fill="#D0A8C0">この期間の体温データはありません</text>`;
+  svgEl.setAttribute('viewBox',`0 0 ${W} ${H}`); svgEl.innerHTML=s;
+}
+// 睡眠時間の推移グラフ（体温グラフと同じ30日窓・同じスクロール位置）
+function drawSleepChart() {
+  const svgEl=document.getElementById('sleep-chart'); if(!svgEl) return;
+  const W=360,H=150, pL=30,pR=10,pT=12,pB=28, cW=W-pL-pR,cH=H-pT-pB;
+  const minH=0,maxH=12;
+  const end=fromStr(toStr(chartEndDate)), start=addDays(end,-(CHART_DAYS-1));
+  const data=[];
+  for(let i=0;i<CHART_DAYS;i++){ const d=addDays(start,i); const sl=appData.sleep[toStr(d)]; if(sl){const h=sleepHours(sl.start,sl.end); if(h!=null)data.push({i,h});} }
+  const xS=i=>pL+(CHART_DAYS<=1?0:i/(CHART_DAYS-1))*cW, yS=h=>pT+(1-(Math.min(h,maxH)-minH)/(maxH-minH))*cH;
+  let s='';
+  // 目安ゾーン：7〜9時間を薄緑
+  s+=`<rect x="${pL}" y="${yS(9).toFixed(1)}" width="${cW}" height="${(yS(7)-yS(9)).toFixed(1)}" fill="#E6F7EC"/>`;
+  [0,3,6,9,12].forEach(h=>{const y=yS(h);s+=`<line x1="${pL}" y1="${y}" x2="${pL+cW}" y2="${y}" stroke="#EAE0EC" stroke-width="0.5"/>`;s+=`<text x="${pL-3}" y="${y+3.5}" text-anchor="end" font-size="8" fill="#C8A8C0">${h}</text>`;});
+  for(let i=0;i<CHART_DAYS;i++){ const d=addDays(start,i), first=d.getDate()===1;
+    if(first){ s+=`<line x1="${xS(i).toFixed(1)}" y1="${pT}" x2="${xS(i).toFixed(1)}" y2="${pT+cH}" stroke="#F0D0E0" stroke-width="1"/>`; }
+    if(i%5===0||first){ s+=`<text x="${xS(i).toFixed(1)}" y="${pT+cH+16}" text-anchor="middle" font-size="8" fill="${first?'#E06898':'#C8A8C0'}" font-weight="${first?'700':'400'}">${fmtMD(d)}</text>`; }
+  }
+  if(data.length>1)s+=`<path d="${data.map((p,i)=>`${i?'L':'M'}${xS(p.i).toFixed(1)},${yS(p.h).toFixed(1)}`).join(' ')}" stroke="#9C77C8" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`;
+  data.forEach(p=>s+=`<circle cx="${xS(p.i).toFixed(1)}" cy="${yS(p.h).toFixed(1)}" r="3.5" fill="#9C77C8" stroke="white" stroke-width="1.5"/>`);
+  if(!data.length)s+=`<text x="${W/2}" y="${H/2}" text-anchor="middle" font-size="12" fill="#D0A8C0">この期間の睡眠データはありません</text>`;
   svgEl.setAttribute('viewBox',`0 0 ${W} ${H}`); svgEl.innerHTML=s;
 }
 function addTemperature() {
@@ -1104,6 +1249,47 @@ function renderTempList() {
   el.innerHTML=entries.map(e=>{const d=fromStr(e.ds);return `<div class="temp-entry"><div class="temp-entry-date">${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日（${WEEKDAYS[d.getDay()]}）</div><div style="display:flex;align-items:center;gap:8px;"><div class="temp-entry-val">${e.t.toFixed(2)}<span>℃</span></div><button class="del-btn" onclick="deleteTemp('${e.ds}')">✕</button></div></div>`;}).join('');
 }
 function deleteTemp(ds) { delete appData.temperatures[ds]; persist(); renderTempTab(); }
+
+/* ===== TEST（検査薬）TAB ===== */
+const TEST_RESULT_STYLE={ '陽性':'color:var(--pink-500);font-weight:700;', 'うっすら':'color:#A9791E;font-weight:700;', '陰性':'color:#4E6A96;font-weight:700;' };
+function renderTestTab() {
+  const pred=getPredictions();
+  const pregEl=document.getElementById('preg-timing-body');
+  const lhEl=document.getElementById('lh-timing-body');
+  if(!pred) {
+    pregEl.innerHTML='<div class="cycle-hint">生理日を記録すると、検査できる日を計算します 🌸</div>';
+    lhEl.innerHTML='<div class="cycle-hint">生理日を記録すると、検査おすすめ日を計算します 🌸</div>';
+  } else {
+    // 妊娠検査薬：早期タイプ＝生理予定日から / 一般＝生理予定日の1週間後から
+    const early=pred.nextPeriod, normal=addDays(pred.nextPeriod,7);
+    const dE=daysBetween(new Date(),early), dN=daysBetween(new Date(),normal);
+    const lab=n=>n>0?n+'日後':n===0?'今日！':Math.abs(n)+'日前';
+    pregEl.innerHTML=`<div class="cycle-info-grid">
+      <div class="ci-item"><span class="ci-label">早期妊娠検査薬</span><span class="ci-value accent">${fmtDate(early)}〜（${lab(dE)}）</span></div>
+      <div class="ci-item"><span class="ci-label">一般の妊娠検査薬</span><span class="ci-value accent">${fmtDate(normal)}〜（${lab(dN)}）</span></div>
+    </div>
+    <div style="font-size:11px;color:var(--text-light);margin-top:8px;line-height:1.6;">早期タイプは生理予定日ごろ、一般タイプは生理予定日の1週間後からが目安です。フライング検査は結果が出にくいことがあります。</div>`;
+    // 排卵検査薬：排卵予測の5〜6日前から毎日検査
+    const lhStart=addDays(pred.ovulation,-6), lhEnd=addDays(pred.ovulation,-1);
+    const dL=daysBetween(new Date(),lhStart);
+    lhEl.innerHTML=`<div class="cycle-info-grid">
+      <div class="ci-item"><span class="ci-label">検査おすすめ期間</span><span class="ci-value" style="color:#C08020;">${fmtDate(lhStart)}〜${fmtDate(lhEnd)}</span></div>
+      <div class="ci-item"><span class="ci-label">検査スタート</span><span class="ci-value" style="color:#C08020;">${dL>0?dL+'日後':dL===0?'今日！':Math.abs(dL)+'日前'}</span></div>
+    </div>
+    <div style="font-size:11px;color:var(--text-light);margin-top:8px;line-height:1.6;">排卵の数日前から毎日検査し、陽性が出たら1〜2日以内が仲良しタイミングの目安です。</div>`;
+  }
+  // 記録の一覧（妊娠・排卵をまとめて新しい順）
+  const rows=[];
+  Object.keys(appData.pregTests).forEach(ds=>rows.push({ds,kind:'🧪 妊娠',result:appData.pregTests[ds]}));
+  Object.keys(appData.lhTests).forEach(ds=>rows.push({ds,kind:'🥚 排卵',result:appData.lhTests[ds]}));
+  rows.sort((a,b)=>a.ds<b.ds?1:-1);
+  const logEl=document.getElementById('test-log');
+  if(!rows.length){ logEl.innerHTML='<div class="empty-state" style="padding:20px;"><div class="empty-txt">まだ記録がありません</div></div>'; return; }
+  logEl.innerHTML=rows.map(r=>{const d=fromStr(r.ds);
+    return `<div class="temp-entry" style="cursor:pointer;" onclick="openDayModal('${r.ds}')">
+      <div class="temp-entry-date">${d.getMonth()+1}月${d.getDate()}日（${WEEKDAYS[d.getDay()]}）　${r.kind}</div>
+      <div style="font-size:15px;${TEST_RESULT_STYLE[r.result]||''}">${r.result}</div></div>`;}).join('');
+}
 
 /* ===== SETTINGS ===== */
 function loadSettings() {
@@ -1129,11 +1315,23 @@ async function restoreBackup() {
     if(!res.ok) throw new Error('ファイルが見つかりません');
     const b=await res.json();
     (b.periods||[]).forEach(p=>{ if(!appData.periods.includes(p)) appData.periods.push(p); });
-    ['temperatures','memos','symptoms','sleep','meals'].forEach(k=>{
+    ['temperatures','memos','symptoms','sleep','meals','pregTests','lhTests'].forEach(k=>{
+      if(!appData[k]) appData[k]={};
       Object.entries(b[k]||{}).forEach(([ds,v])=>{ if(appData[k][ds]==null) appData[k][ds]=v; });
     });
     persist(); renderCalendar(); showToast('復元しました 🌸');
   } catch(e) { showToast('復元エラー: '+e.message); }
+}
+// 端末内の自動バックアップ（別キー）から復元。アプリ内で誤って消した直後の保険
+function restoreAutoBackup() {
+  const raw=localStorage.getItem('ninkatsu_v2_autobackup');
+  if(!raw){ showToast('自動バックアップが見つかりません'); return; }
+  if(!confirm('直近の自動バックアップから復元しますか？\n今の状態は上書きされます。')) return;
+  try {
+    appData=JSON.parse(raw);
+    ['meals','sleep','pregTests','lhTests'].forEach(k=>{ if(!appData[k]) appData[k]={}; });
+    persist(); renderCalendar(); switchTab('calendar'); showToast('自動バックアップから復元しました 🌸');
+  } catch(_) { showToast('復元エラー'); }
 }
 
 function exportData() {
@@ -1143,11 +1341,11 @@ function exportData() {
 }
 function importData() {
   const inp=document.createElement('input');inp.type='file';inp.accept='.json';
-  inp.onchange=e=>{const file=e.target.files[0];if(!file)return;const r=new FileReader();r.onload=ev=>{try{const d=JSON.parse(ev.target.result);if(d.periods&&d.settings){appData=d;if(!appData.meals)appData.meals={};if(!appData.sleep)appData.sleep={};persist();renderCalendar();showToast('インポートしました 🌸');}else showToast('ファイルが正しくありません');}catch(_){showToast('読み込みエラー');}};r.readAsText(file);};inp.click();
+  inp.onchange=e=>{const file=e.target.files[0];if(!file)return;const r=new FileReader();r.onload=ev=>{try{const d=JSON.parse(ev.target.result);if(d.periods&&d.settings){appData=d;['meals','sleep','pregTests','lhTests'].forEach(k=>{if(!appData[k])appData[k]={};});persist();renderCalendar();showToast('インポートしました 🌸');}else showToast('ファイルが正しくありません');}catch(_){showToast('読み込みエラー');}};r.readAsText(file);};inp.click();
 }
 function clearData() {
   if(!confirm('全データを削除しますか？この操作は元に戻せません。'))return;
-  appData={periods:[],temperatures:{},memos:{},symptoms:{},meals:{},sleep:{},settings:{cycleLength:28,periodLength:5,claudeApiKey:''}};
+  appData={periods:[],temperatures:{},memos:{},symptoms:{},meals:{},sleep:{},pregTests:{},lhTests:{},settings:{cycleLength:28,periodLength:5,claudeApiKey:''}};
   persist();renderCalendar();showToast('削除しました');
 }
 
