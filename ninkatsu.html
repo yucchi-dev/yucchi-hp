@@ -128,6 +128,9 @@
     .btn-block{width:100%;padding:12px;font-size:14px;border-radius:12px;}
 
     /* Temperature chart */
+    .chart-scroll-wrap{display:flex;align-items:flex-start;}
+    .chart-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;flex:1;overscroll-behavior-x:contain;}
+    .chart-scroll::-webkit-scrollbar{height:0;}
     .chart-nav-row{display:flex;justify-content:center;align-items:center;gap:12px;margin-bottom:10px;}
     .chart-nav-btn{background:var(--pink-100);border:none;border-radius:50%;width:30px;height:30px;font-size:16px;cursor:pointer;color:var(--pink-500);display:flex;align-items:center;justify-content:center;}
     .chart-nav-btn:active{background:var(--pink-200);}
@@ -352,12 +355,11 @@
         </div>
       </div>
       <div class="card">
-        <div class="chart-nav-row">
-          <button class="chart-nav-btn" onclick="changeChartMonth(-1)">‹</button>
-          <div class="chart-nav-label" id="chart-month-label"></div>
-          <button class="chart-nav-btn" onclick="changeChartMonth(1)">›</button>
+        <div class="card-title">🌡 基礎体温の推移（← 横にスワイプ →）</div>
+        <div class="chart-scroll-wrap">
+          <svg id="temp-axis" width="34" height="180"></svg>
+          <div class="chart-scroll" id="temp-scroll"><svg id="temp-chart" height="180"></svg></div>
         </div>
-        <svg id="temp-chart" width="100%" height="180"></svg>
         <div class="legend" style="padding:6px 2px 0;">
           <div class="legend-item"><span style="width:10px;height:10px;border-radius:50%;background:#E85070;display:inline-block;"></span>高温期側</div>
           <div class="legend-item"><span style="width:10px;height:10px;border-radius:50%;background:#5090D8;display:inline-block;"></span>低温期側</div>
@@ -367,8 +369,11 @@
         </div>
       </div>
       <div class="card">
-        <div class="card-title">😴 睡眠時間の推移</div>
-        <svg id="sleep-chart" width="100%" height="150"></svg>
+        <div class="card-title">😴 睡眠時間の推移（体温と連動スクロール）</div>
+        <div class="chart-scroll-wrap">
+          <svg id="sleep-axis" width="26" height="150"></svg>
+          <div class="chart-scroll" id="sleep-scroll"><svg id="sleep-chart" height="150"></svg></div>
+        </div>
       </div>
       <div id="temp-list"></div>
     </div>
@@ -1156,13 +1161,41 @@ function parseAI(raw) {
 }
 
 /* ===== TEMPERATURE ===== */
-const CHART_DAYS=30;                 // グラフに表示する日数（連続した窓）
-let chartEndDate=new Date();         // 窓の右端（この日まで表示）
+const DAY_W=12;   // 1日あたりの横幅(px)。全期間を1本の帯として描き、横スワイプで見る
 function fmtMD(d){ return (d.getMonth()+1)+'/'+d.getDate(); }
-function changeChartMonth(dir) { chartEndDate=addDays(chartEndDate, dir*14); renderTempTab(); }  // ‹›で2週間ずつスクロール
+// 描画範囲：最古の記録の2日前 〜 次回生理予測+2週間（記録がなくても直近5週間は出す）
+function chartRange() {
+  const today=fromStr(toStr(new Date()));
+  let start=addDays(today,-34), end=addDays(today,7);
+  const keys=[...Object.keys(appData.temperatures),...Object.keys(appData.sleep),...appData.periods].sort();
+  if(keys.length&&fromStr(keys[0])<start) start=fromStr(keys[0]);
+  const pred=getPredictions();
+  if(pred){const e=addDays(pred.nextPeriod,14); if(e>end) end=e;}
+  start=addDays(start,-2);
+  return {start, end, n:daysBetween(start,end)+1};
+}
 function renderTempTab() {
   const di=document.getElementById('temp-date-input'); if(!di.value) di.value=toStr(new Date());
   drawChart(); drawSleepChart(); renderTempList();
+  initChartScrollSync();
+  scrollChartsToEnd();
+}
+// 体温と睡眠のスクロールを連動させる
+let chartSyncInit=false, chartScrolledOnce=false;
+function initChartScrollSync() {
+  if(chartSyncInit) return; chartSyncInit=true;
+  const t=document.getElementById('temp-scroll'), sl=document.getElementById('sleep-scroll');
+  // 値が同じなら代入しない＝イベントの無限ループが起きない
+  const link=(a,b)=>a.addEventListener('scroll',()=>{ if(Math.abs(b.scrollLeft-a.scrollLeft)>1) b.scrollLeft=a.scrollLeft; });
+  link(t,sl); link(sl,t);
+}
+// 初回表示時は右端（今日〜未来側）へ
+function scrollChartsToEnd() {
+  const t=document.getElementById('temp-scroll');
+  if(chartScrolledOnce||t.scrollWidth<=t.clientWidth) return;
+  t.scrollLeft=t.scrollWidth;
+  document.getElementById('sleep-scroll').scrollLeft=t.scrollLeft;
+  chartScrolledOnce=true;
 }
 // 過去〜未来の排卵イベントを推定（各生理開始の14日前＝直前周期の排卵、＋次回予測）
 function getOvulationEvents() {
@@ -1172,73 +1205,80 @@ function getOvulationEvents() {
   return evs;
 }
 function drawChart() {
-  const svgEl=document.getElementById('temp-chart'), W=360,H=180, pL=40,pR=10,pT=12,pB=28, cW=W-pL-pR,cH=H-pT-pB;
-  const minT=35.5,maxT=37.5;
-  const end=fromStr(toStr(chartEndDate)), start=addDays(end,-(CHART_DAYS-1));
-  document.getElementById('chart-month-label').textContent=fmtMD(start)+'〜'+fmtMD(end);
+  const svgEl=document.getElementById('temp-chart');
+  const {start,end,n}=chartRange();
+  const H=180, pT=12,pB=28, cH=H-pT-pB, W=n*DAY_W;
+  const minT=35.5,maxT=37.5, todayStr=toStr(new Date());
   const data=[];
-  for(let i=0;i<CHART_DAYS;i++){ const d=addDays(start,i); const t=appData.temperatures[toStr(d)]; if(t!=null) data.push({i,t}); }
-  const idxOf=d=>daysBetween(start,fromStr(toStr(d)));                 // 窓内インデックス
-  const xS=i=>pL+(CHART_DAYS<=1?0:i/(CHART_DAYS-1))*cW, yS=t=>pT+(1-(t-minT)/(maxT-minT))*cH;
-  const xClamp=i=>pL+Math.max(0,Math.min(CHART_DAYS-1,i))/(CHART_DAYS-1)*cW;
+  for(let i=0;i<n;i++){ const t=appData.temperatures[toStr(addDays(start,i))]; if(t!=null) data.push({i,t}); }
+  const idxOf=d=>daysBetween(start,fromStr(toStr(d)));
+  const xS=i=>i*DAY_W+DAY_W/2, yS=t=>pT+(1-(t-minT)/(maxT-minT))*cH;
   let s='';
   const yB=yS(36.7);
-  s+=`<rect x="${pL}" y="${pT}" width="${cW}" height="${yB-pT}" fill="#FFF0F5"/>`;
-  s+=`<rect x="${pL}" y="${yB}" width="${cW}" height="${pT+cH-yB}" fill="#EEF4FF"/>`;
+  s+=`<rect x="0" y="${pT}" width="${W}" height="${yB-pT}" fill="#FFF0F5"/>`;
+  s+=`<rect x="0" y="${yB}" width="${W}" height="${pT+cH-yB}" fill="#EEF4FF"/>`;
   // ▼ 妊娠可能期の帯（排卵−5〜+3日）を薄い黄色で。排卵ズレも見込んで幅を持たせている
   getOvulationEvents().forEach(ov=>{
-    const fs=idxOf(addDays(ov,-5)), fe=idxOf(addDays(ov,3));
-    if(fe<0||fs>CHART_DAYS-1) return;
-    const x1=xClamp(fs), x2=xClamp(fe);
-    s+=`<rect x="${x1.toFixed(1)}" y="${pT}" width="${(x2-x1).toFixed(1)}" height="${cH}" fill="#FFF6D6" opacity="0.75"/>`;
+    const fs=Math.max(0,idxOf(addDays(ov,-5))), fe=Math.min(n-1,idxOf(addDays(ov,3)));
+    if(fe<0||fs>n-1) return;
+    s+=`<rect x="${(fs*DAY_W).toFixed(1)}" y="${pT}" width="${((fe-fs+1)*DAY_W).toFixed(1)}" height="${cH}" fill="#FFF6D6" opacity="0.75"/>`;
   });
-  [35.5,36.0,36.5,36.7,37.0,37.5].forEach(t=>{const y=yS(t),base=t===36.7;s+=`<line x1="${pL}" y1="${y}" x2="${pL+cW}" y2="${y}" stroke="${base?'#FFB3D1':'#F0D8E8'}" stroke-width="${base?1.5:.5}" stroke-dasharray="${base?'4,3':''}"/>`;s+=`<text x="${pL-3}" y="${y+3.5}" text-anchor="end" font-size="8" fill="#C8A8C0">${t.toFixed(1)}</text>`;});
+  [35.5,36.0,36.5,36.7,37.0,37.5].forEach(t=>{const y=yS(t),base=t===36.7;s+=`<line x1="0" y1="${y}" x2="${W}" y2="${y}" stroke="${base?'#FFB3D1':'#F0D8E8'}" stroke-width="${base?1.5:.5}" stroke-dasharray="${base?'4,3':''}"/>`;});
   // ▼ 排卵予測日：オレンジの縦線
-  getOvulationEvents().forEach(ov=>{ const i=idxOf(ov); if(i<0||i>CHART_DAYS-1) return;
+  getOvulationEvents().forEach(ov=>{ const i=idxOf(ov); if(i<0||i>n-1) return;
     s+=`<line x1="${xS(i).toFixed(1)}" y1="${pT}" x2="${xS(i).toFixed(1)}" y2="${pT+cH}" stroke="#F0A020" stroke-width="1.5" stroke-dasharray="3,2"/>`;});
-  // 縦軸ラベル：5日ごとにM/D、月初は区切り線＋強調
-  for(let i=0;i<CHART_DAYS;i++){
+  // 日付ラベル：5の倍数日にM/D、月初は区切り線＋強調。今日はピンクの縦線
+  for(let i=0;i<n;i++){
     const d=addDays(start,i), first=d.getDate()===1;
     if(first){ s+=`<line x1="${xS(i).toFixed(1)}" y1="${pT}" x2="${xS(i).toFixed(1)}" y2="${pT+cH}" stroke="#F0D0E0" stroke-width="1"/>`; }
-    if(i%5===0||first){ s+=`<text x="${xS(i).toFixed(1)}" y="${pT+cH+16}" text-anchor="middle" font-size="8" fill="${first?'#E06898':'#C8A8C0'}" font-weight="${first?'700':'400'}">${fmtMD(d)}</text>`; }
+    if(toStr(d)===todayStr){ s+=`<line x1="${xS(i).toFixed(1)}" y1="${pT}" x2="${xS(i).toFixed(1)}" y2="${pT+cH}" stroke="#F4689A" stroke-width="1.5" opacity="0.6"/>`;s+=`<text x="${xS(i).toFixed(1)}" y="${pT-3}" text-anchor="middle" font-size="8" fill="#F4689A" font-weight="700">今日</text>`; }
+    if(d.getDate()%5===0||first){ s+=`<text x="${xS(i).toFixed(1)}" y="${pT+cH+16}" text-anchor="middle" font-size="8" fill="${first?'#E06898':'#C8A8C0'}" font-weight="${first?'700':'400'}">${fmtMD(d)}</text>`; }
   }
   // ▼ 生理日：下端のピンクの太線
-  for(let i=0;i<CHART_DAYS;i++){ const d=addDays(start,i); if(appData.periods.includes(toStr(d))){
+  for(let i=0;i<n;i++){ if(appData.periods.includes(toStr(addDays(start,i)))){
     s+=`<line x1="${xS(i).toFixed(1)}" y1="${pT+cH-2}" x2="${xS(i).toFixed(1)}" y2="${pT+cH+2}" stroke="#F4A7B9" stroke-width="4" stroke-linecap="round"/>`;}}
   if(data.length>1)s+=`<path d="${data.map((p,i)=>`${i?'L':'M'}${xS(p.i).toFixed(1)},${yS(p.t).toFixed(1)}`).join(' ')}" stroke="#F4A7B9" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`;
   data.forEach(p=>s+=`<circle cx="${xS(p.i).toFixed(1)}" cy="${yS(p.t).toFixed(1)}" r="4" fill="${p.t>=36.7?'#E85070':'#5090D8'}" stroke="white" stroke-width="1.5"/>`);
-  if(!data.length)s+=`<text x="${W/2}" y="${H/2}" text-anchor="middle" font-size="12" fill="#D0A8C0">この期間の体温データはありません</text>`;
-  svgEl.setAttribute('viewBox',`0 0 ${W} ${H}`); svgEl.innerHTML=s;
+  svgEl.setAttribute('width',W); svgEl.setAttribute('height',H); svgEl.setAttribute('viewBox',`0 0 ${W} ${H}`); svgEl.innerHTML=s;
+  // 左端固定のY軸ラベル
+  let a='';
+  [35.5,36.0,36.5,36.7,37.0,37.5].forEach(t=>{a+=`<text x="30" y="${(yS(t)+3.5).toFixed(1)}" text-anchor="end" font-size="8" fill="${t===36.7?'#E06898':'#C8A8C0'}" font-weight="${t===36.7?'700':'400'}">${t.toFixed(1)}</text>`;});
+  document.getElementById('temp-axis').innerHTML=a;
 }
-// 睡眠時間の推移グラフ（体温グラフと同じ30日窓・同じスクロール位置）
+// 睡眠時間の推移グラフ（体温と同じ全期間・連動スクロール）
 function drawSleepChart() {
   const svgEl=document.getElementById('sleep-chart'); if(!svgEl) return;
-  const W=360,H=150, pL=30,pR=10,pT=12,pB=28, cW=W-pL-pR,cH=H-pT-pB;
+  const {start,end,n}=chartRange();
+  const H=150, pT=12,pB=28, cH=H-pT-pB, W=n*DAY_W;
   const minH=0,maxH=12;
-  const end=fromStr(toStr(chartEndDate)), start=addDays(end,-(CHART_DAYS-1));
   const data=[];
-  for(let i=0;i<CHART_DAYS;i++){ const d=addDays(start,i); const sl=appData.sleep[toStr(d)]; if(sl){const h=sleepHours(sl.start,sl.end); if(h!=null)data.push({i,h});} }
-  const xS=i=>pL+(CHART_DAYS<=1?0:i/(CHART_DAYS-1))*cW, yS=h=>pT+(1-(Math.min(h,maxH)-minH)/(maxH-minH))*cH;
+  for(let i=0;i<n;i++){ const sl=appData.sleep[toStr(addDays(start,i))]; if(sl){const h=sleepHours(sl.start,sl.end); if(h!=null)data.push({i,h});} }
+  const xS=i=>i*DAY_W+DAY_W/2, yS=h=>pT+(1-(Math.min(h,maxH)-minH)/(maxH-minH))*cH;
   let s='';
   // 目安ゾーン：7〜9時間を薄緑
-  s+=`<rect x="${pL}" y="${yS(9).toFixed(1)}" width="${cW}" height="${(yS(7)-yS(9)).toFixed(1)}" fill="#E6F7EC"/>`;
-  [0,3,6,9,12].forEach(h=>{const y=yS(h);s+=`<line x1="${pL}" y1="${y}" x2="${pL+cW}" y2="${y}" stroke="#EAE0EC" stroke-width="0.5"/>`;s+=`<text x="${pL-3}" y="${y+3.5}" text-anchor="end" font-size="8" fill="#C8A8C0">${h}</text>`;});
-  for(let i=0;i<CHART_DAYS;i++){ const d=addDays(start,i), first=d.getDate()===1;
+  s+=`<rect x="0" y="${yS(9).toFixed(1)}" width="${W}" height="${(yS(7)-yS(9)).toFixed(1)}" fill="#E6F7EC"/>`;
+  [0,3,6,9,12].forEach(h=>{const y=yS(h);s+=`<line x1="0" y1="${y}" x2="${W}" y2="${y}" stroke="#EAE0EC" stroke-width="0.5"/>`;});
+  for(let i=0;i<n;i++){ const d=addDays(start,i), first=d.getDate()===1;
     if(first){ s+=`<line x1="${xS(i).toFixed(1)}" y1="${pT}" x2="${xS(i).toFixed(1)}" y2="${pT+cH}" stroke="#F0D0E0" stroke-width="1"/>`; }
-    if(i%5===0||first){ s+=`<text x="${xS(i).toFixed(1)}" y="${pT+cH+16}" text-anchor="middle" font-size="8" fill="${first?'#E06898':'#C8A8C0'}" font-weight="${first?'700':'400'}">${fmtMD(d)}</text>`; }
+    if(d.getDate()%5===0||first){ s+=`<text x="${xS(i).toFixed(1)}" y="${pT+cH+16}" text-anchor="middle" font-size="8" fill="${first?'#E06898':'#C8A8C0'}" font-weight="${first?'700':'400'}">${fmtMD(d)}</text>`; }
   }
   if(data.length>1)s+=`<path d="${data.map((p,i)=>`${i?'L':'M'}${xS(p.i).toFixed(1)},${yS(p.h).toFixed(1)}`).join(' ')}" stroke="#9C77C8" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`;
   data.forEach(p=>s+=`<circle cx="${xS(p.i).toFixed(1)}" cy="${yS(p.h).toFixed(1)}" r="3.5" fill="#9C77C8" stroke="white" stroke-width="1.5"/>`);
-  if(!data.length)s+=`<text x="${W/2}" y="${H/2}" text-anchor="middle" font-size="12" fill="#D0A8C0">この期間の睡眠データはありません</text>`;
-  svgEl.setAttribute('viewBox',`0 0 ${W} ${H}`); svgEl.innerHTML=s;
+  svgEl.setAttribute('width',W); svgEl.setAttribute('height',H); svgEl.setAttribute('viewBox',`0 0 ${W} ${H}`); svgEl.innerHTML=s;
+  let a='';
+  [0,3,6,9,12].forEach(h=>{a+=`<text x="22" y="${(yS(h)+3.5).toFixed(1)}" text-anchor="end" font-size="8" fill="#C8A8C0">${h}h</text>`;});
+  document.getElementById('sleep-axis').innerHTML=a;
 }
 function addTemperature() {
   const ds=document.getElementById('temp-date-input').value, raw=document.getElementById('temp-val-input').value;
   if(!ds||!raw){showToast('日付と体温を入力してください');return;}
   const t=parseFloat(raw); if(isNaN(t)||t<35||t>40){showToast('体温は35〜40℃で入力してください');return;}
   appData.temperatures[ds]=t; persist();
-  chartEndDate=fromStr(ds);  // 入力した日が見える位置へ窓を移動
-  document.getElementById('temp-val-input').value=''; renderTempTab(); showToast('体温を記録しました 🌡');
+  renderTempTab(); showToast('体温を記録しました 🌡');
+  // 入力した日が見える位置へスクロール
+  const {start}=chartRange(); const el=document.getElementById('temp-scroll');
+  el.scrollLeft=Math.max(0, daysBetween(start,fromStr(ds))*DAY_W - el.clientWidth/2);
+  document.getElementById('temp-val-input').value='';
 }
 // 体温リストは月区切りなし・全期間を新しい順に表示
 function renderTempList() {
