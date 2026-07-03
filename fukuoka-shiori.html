@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>福岡旅行のしおり 2026.7.4–7.6</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Yusei+Magic&family=Zen+Maru+Gothic:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #fdf8ec;
+    --ink: #40382e;
+    --red: #e8574c;
+    --blue: #4a90d9;
+    --green: #58b368;
+    --orange: #f5a623;
+    --yellow: #fff3b0;
+    --line: #d8cbb2;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: "Zen Maru Gothic", "Hiragino Maru Gothic ProN", sans-serif;
+    background:
+      repeating-linear-gradient(0deg, transparent, transparent 27px, rgba(180,160,120,.12) 28px),
+      var(--paper);
+    color: var(--ink);
+    line-height: 1.8;
+    padding-bottom: 70px;
+  }
+  .wrap { max-width: 560px; margin: 0 auto; padding: 0 14px; }
+  .hand { font-family: "Yusei Magic", "Zen Maru Gothic", sans-serif; }
+
+  /* ===== マスキングテープ ===== */
+  .tape {
+    display: block;
+    width: 110px; height: 22px;
+    margin: 0 auto -12px;
+    background: rgba(122, 200, 165, .65);
+    transform: rotate(-3deg);
+    border-left: 2px dotted rgba(255,255,255,.8);
+    border-right: 2px dotted rgba(255,255,255,.8);
+    position: relative; z-index: 2;
+  }
+  .tape.pink { background: rgba(240, 150, 150, .55); transform: rotate(2.5deg); }
+  .tape.blue { background: rgba(130, 175, 220, .55); transform: rotate(-2deg); }
+
+  /* ===== 表紙 ===== */
+  .cover { text-align: center; padding: 30px 16px 10px; }
+  .title-box {
+    display: inline-block;
+    border: 3px solid var(--ink);
+    border-radius: 14px 18px 15px 17px / 17px 14px 18px 15px;
+    padding: 14px 26px 10px;
+    background: #fff;
+    box-shadow: 4px 4px 0 rgba(64,56,46,.15);
+    position: relative;
+  }
+  .title-box::before {
+    content: "";
+    position: absolute; inset: 5px;
+    border: 2px dashed var(--red);
+    border-radius: 10px;
+    pointer-events: none;
+  }
+  .title-box .small { font-size: 13px; letter-spacing: 4px; color: var(--blue); }
+  .title-box h1 { font-size: 30px; letter-spacing: 3px; color: var(--red); }
+  .cover .dates { margin-top: 12px; font-size: 16px; font-weight: 700; letter-spacing: 2px; }
+  .name-line { margin-top: 6px; font-size: 14px; }
+  .name-line b { border-bottom: 2px solid var(--ink); padding: 0 14px; }
+  .wakuwaku { margin-top: 6px; font-size: 15px; }
+  .wakuwaku .stars { color: var(--orange); font-size: 19px; letter-spacing: 3px; }
+
+  /* マスコット & 吹き出し */
+  .mascot-row {
+    display: flex; justify-content: center; align-items: center;
+    gap: 8px; margin-top: 16px; flex-wrap: wrap;
+  }
+  .bubble {
+    position: relative;
+    background: #fff;
+    border: 2px solid var(--ink);
+    border-radius: 16px;
+    padding: 4px 14px;
+    font-size: 13px;
+    font-family: "Yusei Magic", sans-serif;
+  }
+  .bubble.l::after, .bubble.r::after {
+    content: "";
+    position: absolute; top: 50%;
+    width: 10px; height: 10px;
+    background: #fff;
+    border-bottom: 2px solid var(--ink);
+    transform: translateY(-50%) rotate(45deg);
+  }
+  .bubble.l::after { right: -7px; border-right: 2px solid var(--ink); }
+  .bubble.r::after { left: -7px; border-left: 2px solid var(--ink); border-bottom: none; border-top: 2px solid var(--ink); transform: translateY(-50%) rotate(-45deg); }
+  .cover-doodles { display: flex; justify-content: center; gap: 14px; margin-top: 12px; flex-wrap: wrap; }
+
+  /* ===== 見出し ===== */
+  h2 {
+    font-family: "Yusei Magic", sans-serif;
+    font-size: 20px;
+    margin: 38px 0 14px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  h2 .num {
+    flex: 0 0 auto;
+    width: 34px; height: 34px;
+    background: var(--red);
+    color: #fff;
+    border-radius: 50% 46% 52% 48%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 17px;
+  }
+  h2.b .num { background: var(--blue); }
+  h2.g .num { background: var(--green); }
+  h2.o .num { background: var(--orange); }
+  h3 {
+    font-size: 15px;
+    margin: 18px 0 8px;
+    display: inline-block;
+    background: var(--yellow);
+    padding: 1px 14px;
+    border-radius: 999px;
+    border: 2px solid var(--ink);
+  }
+
+  /* ===== カード ===== */
+  .card {
+    background: #fff;
+    border: 2.5px solid var(--ink);
+    border-radius: 12px 16px 13px 15px / 15px 12px 16px 13px;
+    padding: 14px 16px;
+    margin-bottom: 14px;
+    box-shadow: 3px 3px 0 rgba(64,56,46,.12);
+  }
+  .tag {
+    display: inline-block;
+    border: 2px solid var(--ink);
+    background: var(--yellow);
+    font-size: 11.5px;
+    font-weight: 700;
+    border-radius: 999px;
+    padding: 0 10px;
+    margin-right: 6px;
+  }
+  .tag.r { background: #ffd9d5; }
+  .tag.b { background: #d7e8fb; }
+  .tag.g { background: #d9f2df; }
+  .big { font-size: 17px; font-weight: 700; }
+  .sub { font-size: 12px; color: #8c7f6b; }
+
+  /* ===== タイムライン ===== */
+  .tl { list-style: none; }
+  .tl li {
+    display: flex; gap: 10px;
+    padding: 8px 0;
+    border-bottom: 2px dotted var(--line);
+    font-size: 14px;
+  }
+  .tl li:last-child { border-bottom: none; }
+  .tl .time {
+    flex: 0 0 60px;
+    font-family: "Yusei Magic", sans-serif;
+    color: var(--blue);
+    font-size: 14px;
+  }
+  .tl .note { display: block; font-size: 12px; color: #8c7f6b; }
+  .tl b { color: var(--red); }
+
+  /* ===== 名物図鑑 ===== */
+  .zukan { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .zu {
+    background: #fff;
+    border: 2.5px solid var(--ink);
+    border-radius: 12px;
+    padding: 12px 10px 10px;
+    text-align: center;
+    box-shadow: 3px 3px 0 rgba(64,56,46,.12);
+  }
+  .zu .name {
+    font-family: "Yusei Magic", sans-serif;
+    font-size: 15px; margin-top: 6px;
+  }
+  .zu .desc { font-size: 11.5px; color: #6d6152; line-height: 1.5; margin-top: 3px; }
+  .zu .where { display: inline-block; margin-top: 6px; font-size: 10.5px; background: var(--yellow); border-radius: 999px; padding: 0 8px; border: 1.5px solid var(--ink); }
+
+  /* ===== マップ ===== */
+  .map-card {
+    background: #fff;
+    border: 2.5px solid var(--ink);
+    border-radius: 12px;
+    padding: 8px;
+    box-shadow: 3px 3px 0 rgba(64,56,46,.12);
+  }
+  .map-card svg { width: 100%; height: auto; display: block; }
+
+  /* ===== メモ・表 ===== */
+  .memo {
+    background: var(--yellow);
+    border: 2px dashed var(--ink);
+    border-radius: 10px;
+    padding: 8px 14px;
+    font-size: 13px;
+    margin: 10px 0 16px;
+  }
+  .memo::before { content: "✏️ "; }
+  table {
+    width: 100%; border-collapse: collapse; font-size: 12px;
+    background: #fff; border: 2.5px solid var(--ink); border-radius: 10px;
+  }
+  th, td { padding: 7px 8px; border-bottom: 2px dotted var(--line); text-align: left; vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  th { background: #d7e8fb; border-bottom: 2.5px solid var(--ink); font-size: 12px; white-space: nowrap; }
+  td .shop { font-weight: 700; }
+
+  /* ===== チェックリスト ===== */
+  .check { list-style: none; }
+  .check li { padding: 5px 0; font-size: 14px; border-bottom: 2px dotted var(--line); }
+  .check li:last-child { border-bottom: none; }
+  .check input { transform: scale(1.35); margin-right: 12px; accent-color: var(--red); }
+
+  /* ===== 約束 ===== */
+  .rules { list-style: none; counter-reset: rule; }
+  .rules li {
+    counter-increment: rule;
+    font-size: 15px; padding: 7px 0 7px 40px; position: relative;
+    border-bottom: 2px dotted var(--line);
+  }
+  .rules li:last-child { border-bottom: none; }
+  .rules li::before {
+    content: counter(rule);
+    position: absolute; left: 2px; top: 9px;
+    width: 26px; height: 26px;
+    background: var(--green); color: #fff;
+    border-radius: 48% 52% 46% 54%;
+    display: flex; align-items: center; justify-content: center;
+    font-family: "Yusei Magic", sans-serif; font-size: 14px;
+  }
+
+  /* ===== 自由メモ欄 ===== */
+  .free-memo {
+    background: #fff;
+    border: 2.5px solid var(--ink);
+    border-radius: 12px;
+    padding: 12px 16px 6px;
+    box-shadow: 3px 3px 0 rgba(64,56,46,.12);
+  }
+  .free-memo .ln { height: 34px; border-bottom: 2px dotted var(--line); }
+  .free-memo .ln:last-child { border-bottom: none; }
+
+  footer {
+    text-align: center; margin-top: 46px;
+    font-family: "Yusei Magic", sans-serif;
+    font-size: 15px; color: var(--red);
+  }
+  svg { vertical-align: middle; }
+  @media print { body { background: var(--paper); } .card, .zu, .map-card, .free-memo { box-shadow: none; } }
+  @media (max-width: 380px) { .zukan { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+
+<!-- ================= 表紙 ================= -->
+<div class="cover">
+  <span class="tape"></span>
+  <div class="title-box hand">
+    <div class="small">楽しもう!</div>
+    <h1>福岡旅行のしおり</h1>
+  </div>
+  <div class="dates">2026年7月4日(土) 〜 7月6日(月) 2泊3日</div>
+  <div class="name-line">なまえ <b>ゆいこ</b> と <b>興治</b></div>
+  <div class="wakuwaku">わくわく度 <span class="stars">★★★★★</span></div>
+
+  <!-- めんたいこちゃん登場 -->
+  <div class="mascot-row">
+    <span class="bubble l">おいしいものが<br>いっぱい!楽しみ〜♪</span>
+    <!-- マスコット:めんたい君 -->
+    <svg width="86" height="96" viewBox="0 0 86 96">
+      <g stroke="#40382e" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round">
+        <!-- 帽子 -->
+        <path d="M28 22 Q28 8 43 8 Q58 8 58 22 Z" fill="#40382e"/>
+        <path d="M22 22 L64 22 Q66 26 62 26 L24 26 Q20 26 22 22 Z" fill="#40382e"/>
+        <!-- からだ -->
+        <path d="M25 32 Q22 52 26 70 Q30 88 43 88 Q56 88 60 70 Q64 52 61 32 Q58 24 43 25 Q28 24 25 32 Z" fill="#e8574c"/>
+        <!-- つぶつぶ -->
+        <g fill="#c0392b" stroke="none">
+          <circle cx="33" cy="62" r="1.6"/><circle cx="43" cy="68" r="1.6"/>
+          <circle cx="53" cy="61" r="1.6"/><circle cx="38" cy="76" r="1.6"/><circle cx="49" cy="76" r="1.6"/>
+        </g>
+        <!-- うで -->
+        <path d="M25 44 Q14 40 12 32" fill="none" stroke-width="3"/>
+        <path d="M61 44 Q72 48 76 44" fill="none" stroke-width="3"/>
+        <!-- かお -->
+        <circle cx="36" cy="40" r="2.2" fill="#40382e" stroke="none"/>
+        <circle cx="50" cy="40" r="2.2" fill="#40382e" stroke="none"/>
+        <path d="M39 48 Q43 53 47 48" fill="#fff"/>
+        <circle cx="31" cy="46" r="2.6" fill="#f4a09a" stroke="none"/>
+        <circle cx="55" cy="46" r="2.6" fill="#f4a09a" stroke="none"/>
+      </g>
+    </svg>
+    <span class="bubble r">ようこそ<br>福岡へ!</span>
+  </div>
+
+  <div class="cover-doodles">
+    <!-- 飛行機 -->
+    <svg width="64" height="48" viewBox="0 0 64 48"><g stroke="#40382e" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"><path d="M6 26 L44 26 Q54 26 58 20 L52 18 L14 18 Q8 20 6 26 Z" fill="#d7e8fb"/><path d="M26 18 L20 8 L26 8 L34 18" fill="#4a90d9"/><path d="M22 26 L18 34 L24 34 L30 26" fill="#4a90d9"/><circle cx="46" cy="22" r="1.6" fill="#40382e"/><circle cx="40" cy="22" r="1.6" fill="#40382e"/></g></svg>
+    <!-- 柔道着 -->
+    <svg width="60" height="48" viewBox="0 0 60 48"><g stroke="#40382e" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"><path d="M12 8 L30 14 L48 8 L50 34 Q30 42 10 34 Z" fill="#fff"/><path d="M12 8 L30 14 L48 8" fill="none"/><path d="M10 26 L50 26 L50 31 L10 31 Z" fill="#40382e"/><path d="M26 26 L24 40 M34 26 L38 40" stroke-width="3"/></g></svg>
+    <!-- 提灯 -->
+    <svg width="44" height="52" viewBox="0 0 44 52"><g stroke="#40382e" stroke-width="2.5" stroke-linecap="round"><rect x="16" y="2" width="12" height="5" rx="2" fill="#f5a623"/><ellipse cx="22" cy="26" rx="16" ry="19" fill="#e8574c"/><path d="M8 18 Q22 22 36 18 M6 26 Q22 30 38 26 M8 34 Q22 38 36 34" fill="none" stroke-width="1.6"/><rect x="16" y="44" width="12" height="5" rx="2" fill="#f5a623"/></g></svg>
+    <!-- いちご -->
+    <svg width="46" height="50" viewBox="0 0 46 50"><g stroke="#40382e" stroke-width="2.5" stroke-linejoin="round"><path d="M23 46 Q6 36 8 20 Q10 10 23 12 Q36 10 38 20 Q40 36 23 46 Z" fill="#e8574c"/><path d="M15 6 L23 12 L31 6 M23 2 L23 12" stroke-linecap="round" fill="none" stroke="#58b368" stroke-width="3"/><g fill="#fff3b0" stroke="none"><circle cx="17" cy="22" r="1.7"/><circle cx="28" cy="20" r="1.7"/><circle cx="23" cy="30" r="1.7"/><circle cx="15" cy="32" r="1.7"/><circle cx="30" cy="32" r="1.7"/></g></g></svg>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <!-- ================= めあて ================= -->
+  <h2 class="hand"><span class="num">1</span>旅の目標</h2>
+  <div class="card">
+    <ul class="rules">
+      <li>柔道の応援を全力で頑張る!🥋</li>
+      <li>福岡の美味しいものを残さず食べる!</li>
+      <li>糸島の海と滝で夏を感じる!🌊</li>
+    </ul>
+  </div>
+
+  <!-- ================= 交通 ================= -->
+  <h2 class="b hand"><span class="num">2</span>乗り物と宿泊</h2>
+  <div class="card">
+    <span class="tag b">バス 7/4</span><b>大野GH(立体駐車場) 5:00発</b> → 羽田T1 6:25着<br>
+    <span class="sub">2名・決済済み(予約番号は確定メールを見てね)/メール提示で乗車OK・4:50には集合!</span>
+  </div>
+  <div class="card">
+    <span class="tag r">行き 7/4</span><span class="big">スカイマーク SKY003便</span><br>
+    羽田 <b>7:35</b> 発 → 福岡 <b>9:30</b> 着(座席 26H・26G 並び席!)<br>
+    <span class="tag r">帰り 7/6</span><span class="big">スターフライヤー SFJ054便</span><br>
+    福岡 <b>21:05</b> 発 → 羽田 <b>22:45</b> 着 → 電車で相模大野へ<br>
+    <span class="sub">※行きは前日までにオンラインチェックインを済ませておくこと!</span>
+  </div>
+  <div class="card">
+    <span class="tag g">ホテル</span><span class="big">博多エクセルホテル東急</span><br>
+    中洲川端駅から徒歩3分/IN 7/4 15:00・OUT 7/6<br>
+    <span class="sub">1日目は荷物だけ預けて柔道へGO!</span>
+  </div>
+  <div class="card">
+    <span class="tag g">柔道会場</span><span class="big">福岡武道館</span>(大濠公園の中)<br>
+    地下鉄空港線「大濠公園」駅から徒歩約7分
+  </div>
+
+  <!-- ================= 1日目 ================= -->
+  <h2 class="hand"><span class="num">3</span>1日目 7/4(土)柔道応援の日 🥋</h2>
+  <div class="card">
+    <ul class="tl">
+      <li><span class="time">5:00</span><span>🚌 大野GHからバス出発(4:50集合!)</span></li>
+      <li><span class="time">6:25</span><span>羽田T1着 → 保安検査へ</span></li>
+      <li><span class="time">7:35</span><span>✈️ SKY003で福岡へひとっ飛び</span></li>
+      <li><span class="time">9:30</span><span>福岡空港着 → 地下鉄で中洲川端へ(約10分)<span class="note">📞 着いたらすぐフルフル博多に電話で明太フランスを取り置き!(092-292-7838・受取1時間前まで)</span></span></li>
+      <li><span class="time">10:15</span><span>🏨 ホテルに荷物を預ける</span></li>
+      <li><span class="time">10:30</span><span>🥖 <b>フルフル博多</b>(祇園)で取り置きの<b>明太フランス</b>を受け取り!<span class="note">受け取ったらすぐ祇園駅へ(徒歩5分)。行列で時間が読めない時は迷わずスキップ→3日目朝(月曜10:00開店・P3台)に車でリベンジ</span></span></li>
+      <li><span class="time">10:45</span><span>祇園駅から地下鉄で大濠公園駅へ(乗り換えなし約8分)</span></li>
+      <li><span class="time">11:10</span><span>🏟️ 福岡武道館に到着(試合の20分前!)<span class="note">明太フランスはここでパクリ</span></span></li>
+      <li><span class="time">11:30</span><span>🥋 男子一回戦を応援!(〜13:30)</span></li>
+      <li><span class="time">13:40</span><span>🍤 昼ごはん:<b>天麩羅処ひらお 大名店</b><span class="note">揚げたて天ぷら定食!徒歩15分・土曜OK(〜20:30)</span></span></li>
+      <li><span class="time">14:45</span><span>🌳 大濠公園をお散歩</span></li>
+      <li><span class="time">15:30</span><span>🥋 男子二回戦を応援!(〜17:30)</span></li>
+      <li><span class="time">18:00</span><span>🏨 チェックインして一休み</span></li>
+      <li><span class="time">19:30</span><span>🏮 <b>中洲屋台横丁</b>ではしごナイト!<span class="note">ホテルの目の前!焼きラーメン・餃子・焼き鳥を少しずつ</span></span></li>
+    </ul>
+  </div>
+
+  <!-- ================= 2日目 ================= -->
+  <h2 class="b hand"><span class="num">4</span>2日目 7/5(日)2つの作戦</h2>
+
+  <h3>作戦A:九大が勝ち進んだら</h3>
+  <div class="card">
+    <ul class="tl">
+      <li><span class="time">8:30</span><span>ホテル出発 → 武道館へ</span></li>
+      <li><span class="time">9:00</span><span>🥋 三回戦 → 準決勝 → 決勝(〜15:45)<span class="note">お昼は大濠公園でのんびり(公園内にカフェあり)</span></span></li>
+      <li><span class="time">16:30</span><span>🍓 <b>いちごや cafe TANNAL</b>であまおうタイム<span class="note">大名・無休・9:00〜22:00</span></span></li>
+      <li><span class="time">19:00</span><span>興治くんは祝勝会へ(游魚庵 福岡本店)🎉</span></li>
+    </ul>
+  </div>
+
+  <h3>作戦B:柔道がなかったら</h3>
+  <div class="card">
+    <ul class="tl">
+      <li><span class="time">9:00</span><span>西鉄福岡(天神)から柳川へ<span class="note">「太宰府・柳川観光きっぷ」がお得</span></span></li>
+      <li><span class="time">10:30</span><span>🛶 柳川の川下り(約70分)</span></li>
+      <li><span class="time">12:30</span><span>🍱 うなぎのせいろ蒸しランチ(蒸したてホカホカ)</span></li>
+      <li><span class="time">14:30</span><span>⛩️ 太宰府天満宮へお参り → 参道で梅ヶ枝餅<span class="note">「和牛めんたい神楽」は焼き明太メニューがあれば◎</span></span></li>
+      <li><span class="time">17:30</span><span>天神に戻ってお買い物</span></li>
+    </ul>
+  </div>
+
+  <h3>ゆいこのソロナイト(A・B共通)🌙</h3>
+  <div class="card">
+    <ul class="tl">
+      <li><span class="time">18:00</span><span>🍜 <b>因幡うどん 渡辺通店</b>で博多うどん<span class="note">創業70年超の老舗・ごぼう天うどんが名物!年中無休・日曜は〜20:00(LO19:30)</span></span></li>
+      <li><span class="time">19:15</span><span>天神方面へぶらぶらお散歩(徒歩10分ほど)</span></li>
+      <li><span class="time">19:30</span><span>🍨 締めパフェ:<b>Parfaiteria beL</b>(今泉・18:00〜24:00)か <b>フルーツプラネット</b>(大名・17:00〜24:00)</span></li>
+      <li><span class="time">21:00</span><span>天神駅から地下鉄1駅(またはタクシー)でホテルへ</span></li>
+    </ul>
+  </div>
+  <div class="memo">がっつり食べたい気分なら<b>弐ノ二 博多駅地下街店</b>の焼き餃子(11:00〜22:00・ほぼ無休)に変更もあり。中洲の天手古舞は日曜定休なので注意!</div>
+
+  <!-- ================= 3日目 ================= -->
+  <h2 class="g hand"><span class="num">5</span>3日目 7/6(月)糸島ドライブの日 🚗</h2>
+  <div class="card">
+    <ul class="tl">
+      <li><span class="time">9:00</span><span>チェックアウト → 博多駅でレンタカー(荷物は車へ)</span></li>
+      <li><span class="time">10:15</span><span>🥐 <b>ブランジュリ ノアン</b>で朝パン<span class="note">9:00〜18:00・月曜OK(火木定休)/店の前に無料P</span></span></li>
+      <li><span class="time">11:15</span><span>🌊 <b>桜井二見ヶ浦 夫婦岩</b><span class="note">白い鳥居と青い海!駐車場300円/時</span></span></li>
+      <li><span class="time">12:30</span><span>🍛 昼ごはん:<b>糸島咖喱堂 今津本店</b><span class="note">全席オーシャンビューの海鮮カレー/11:00〜18:00(LO17:00)</span></span></li>
+      <li><span class="time">14:15</span><span>💧 <b>白糸の滝</b>でひんやりタイム<span class="note">無料P約200台/夏はそうめん流しも!</span></span></li>
+      <li><span class="time">15:45</span><span>☕ <b>無垢-muku-cafe</b>でまったり<span class="note">11:30〜19:00/P15台</span></span></li>
+      <li><span class="time">17:00</span><span>市内へ(余裕があれば那珂川「現人神社」に寄り道・無料P)</span></li>
+      <li><span class="time">18:00</span><span>レンタカー返却</span></li>
+      <li><span class="time">18:30</span><span>🍲 <b>もつ鍋 二代目 楽天地 博多駅博多口店</b><span class="note">月曜17:00〜23:00/予約 0120-869-107</span></span></li>
+      <li><span class="time">19:45</span><span>博多駅 → 地下鉄5分で福岡空港へ</span></li>
+      <li><span class="time">21:05</span><span>✈️ SFJ054で羽田へ → 🚃 電車で相模大野</span></li>
+    </ul>
+  </div>
+  <div class="memo">糸島咖喱堂と無垢cafeは不定休なので、前日にInstagramで営業チェック!カリー堂がお休みなら前原エリアの糸島うどんに切り替え。</div>
+
+  <!-- ================= 福岡マップ ================= -->
+  <h2 class="o hand"><span class="num">6</span>今回の福岡マップ</h2>
+  <div class="map-card">
+    <svg viewBox="0 0 520 360" xmlns="http://www.w3.org/2000/svg">
+      <!-- 海 -->
+      <rect x="0" y="0" width="520" height="360" fill="#fdf8ec"/>
+      <path d="M0 0 L520 0 L520 96 Q430 78 340 92 Q230 108 150 88 Q70 70 0 92 Z" fill="#cfe6f7"/>
+      <path d="M20 40 Q34 32 48 40 M70 58 Q84 50 98 58 M150 36 Q164 28 178 36 M260 55 Q274 47 288 55 M390 40 Q404 32 418 40" stroke="#8fb9dd" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+      <!-- 陸 -->
+      <path d="M0 92 Q70 70 150 88 Q230 108 340 92 Q430 78 520 96 L520 360 L0 360 Z" fill="#eef4dc"/>
+      <!-- 道(点線ルート) -->
+      <path d="M78 118 Q120 150 178 168 Q250 190 300 160 Q340 138 385 150 Q432 162 452 128" stroke="#c8a165" stroke-width="3" stroke-dasharray="7 7" fill="none" stroke-linecap="round"/>
+      <path d="M300 160 Q330 220 380 250 M380 250 Q300 270 240 300" stroke="#c8a165" stroke-width="3" stroke-dasharray="7 7" fill="none" stroke-linecap="round"/>
+      <!-- 糸島:夫婦岩(鳥居) -->
+      <g transform="translate(52,96)">
+        <path d="M6 26 L8 6 M30 26 L28 6 M0 8 Q18 2 36 8 L34 3 Q18 -3 2 3 Z M5 13 L31 13" stroke="#e8574c" stroke-width="3" fill="#fff" stroke-linejoin="round" stroke-linecap="round"/>
+        <text x="18" y="46" font-size="13" text-anchor="middle" font-family="Yusei Magic" fill="#40382e">夫婦岩</text>
+      </g>
+      <!-- 白糸の滝 -->
+      <g transform="translate(96,196)">
+        <path d="M0 0 Q10 -8 20 0 Q30 -8 40 0 L34 6 Q20 0 6 6 Z" fill="#8bbf7f" stroke="#40382e" stroke-width="2"/>
+        <path d="M16 4 L14 26 M22 4 L21 26 M28 4 L27 26" stroke="#4a90d9" stroke-width="2.5" stroke-linecap="round"/>
+        <text x="21" y="44" font-size="13" text-anchor="middle" font-family="Yusei Magic" fill="#40382e">白糸の滝</text>
+      </g>
+      <!-- 大濠公園・武道館 -->
+      <g transform="translate(258,116)">
+        <circle cx="14" cy="10" r="9" fill="#8bbf7f" stroke="#40382e" stroke-width="2"/>
+        <rect x="10.5" y="17" width="7" height="9" fill="#8b6f47" stroke="#40382e" stroke-width="1.6"/>
+        <text x="16" y="44" font-size="13" text-anchor="middle" font-family="Yusei Magic" fill="#40382e">大濠公園・武道館</text>
+        <text x="34" y="10" font-size="14">🥋</text>
+      </g>
+      <!-- 中洲(ちょうちん) -->
+      <g transform="translate(368,120)">
+        <ellipse cx="12" cy="14" rx="9" ry="11" fill="#e8574c" stroke="#40382e" stroke-width="2"/>
+        <rect x="8" y="0" width="8" height="4" rx="1.5" fill="#f5a623" stroke="#40382e" stroke-width="1.4"/>
+        <rect x="8" y="24" width="8" height="4" rx="1.5" fill="#f5a623" stroke="#40382e" stroke-width="1.4"/>
+        <text x="12" y="45" font-size="13" text-anchor="middle" font-family="Yusei Magic" fill="#40382e">中洲・ホテル</text>
+      </g>
+      <!-- 博多駅 -->
+      <g transform="translate(436,96)">
+        <rect x="0" y="6" width="34" height="18" rx="3" fill="#fff" stroke="#40382e" stroke-width="2"/>
+        <rect x="5" y="11" width="7" height="7" fill="#d7e8fb" stroke="#40382e" stroke-width="1.4"/>
+        <rect x="21" y="11" width="7" height="7" fill="#d7e8fb" stroke="#40382e" stroke-width="1.4"/>
+        <circle cx="8" cy="27" r="3" fill="#40382e"/><circle cx="26" cy="27" r="3" fill="#40382e"/>
+        <text x="17" y="47" font-size="13" text-anchor="middle" font-family="Yusei Magic" fill="#40382e">博多駅</text>
+      </g>
+      <!-- 太宰府 -->
+      <g transform="translate(366,240)">
+        <path d="M6 26 L8 8 M30 26 L28 8 M0 10 Q18 4 36 10 L34 4 Q18 -2 2 4 Z M5 15 L31 15" stroke="#c0392b" stroke-width="3" fill="#fff" stroke-linejoin="round" stroke-linecap="round"/>
+        <text x="18" y="45" font-size="13" text-anchor="middle" font-family="Yusei Magic" fill="#40382e">太宰府⛩</text>
+      </g>
+      <!-- 柳川 -->
+      <g transform="translate(212,290)">
+        <path d="M0 14 Q14 6 28 14 Q42 22 56 14" stroke="#4a90d9" stroke-width="3" fill="none" stroke-linecap="round"/>
+        <path d="M14 8 L42 8 L38 2 L18 2 Z" fill="#8b6f47" stroke="#40382e" stroke-width="1.8"/>
+        <text x="28" y="34" font-size="13" text-anchor="middle" font-family="Yusei Magic" fill="#40382e">柳川(作戦B)</text>
+      </g>
+      <!-- 星マーク -->
+      <g fill="#f5a623" stroke="#40382e" stroke-width="1.4">
+        <path d="M78 112 l3 6 7 1 -5 5 1 7 -6 -3 -6 3 1 -7 -5 -5 7 -1 Z"/>
+        <path d="M225 128 l3 6 7 1 -5 5 1 7 -6 -3 -6 3 1 -7 -5 -5 7 -1 Z"/>
+        <path d="M486 150 l3 6 7 1 -5 5 1 7 -6 -3 -6 3 1 -7 -5 -5 7 -1 Z"/>
+      </g>
+      <!-- めんたい君(マップ隅) -->
+      <g transform="translate(462,268)">
+        <g stroke="#40382e" stroke-width="2" stroke-linejoin="round" stroke-linecap="round">
+          <path d="M14 11 Q14 3 21 3 Q28 3 28 11 Z" fill="#40382e"/>
+          <path d="M11 11 L31 11 Q32 13 30 13 L12 13 Q10 13 11 11 Z" fill="#40382e"/>
+          <path d="M12 17 Q10 30 13 40 Q16 50 21 50 Q26 50 29 40 Q32 30 30 17 Q28 13 21 14 Q14 13 12 17 Z" fill="#e8574c"/>
+          <circle cx="17" cy="24" r="1.5" fill="#40382e" stroke="none"/>
+          <circle cx="25" cy="24" r="1.5" fill="#40382e" stroke="none"/>
+          <path d="M18 29 Q21 32 24 29" fill="none"/>
+        </g>
+        <text x="21" y="-2" font-size="11" text-anchor="middle" font-family="Yusei Magic" fill="#40382e">色んな所に行こう!</text>
+      </g>
+    </svg>
+  </div>
+
+  <!-- ================= 名物図鑑 ================= -->
+  <h2 class="hand"><span class="num">7</span>福岡名物図鑑</h2>
+  <div class="zukan">
+    <div class="zu">
+      <svg width="80" height="66" viewBox="0 0 80 66"><g stroke="#40382e" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"><path d="M12 30 Q14 24 20 24 L60 24 Q66 24 68 30" fill="none"/><path d="M10 30 L70 30 Q68 52 55 56 L25 56 Q12 52 10 30 Z" fill="#e8574c"/><ellipse cx="40" cy="30" rx="30" ry="6" fill="#fdf8ec"/><path d="M22 28 Q26 24 30 28 M36 27 Q40 23 44 27 M50 28 Q54 24 58 28" fill="none" stroke="#f5a623"/><path d="M18 12 Q20 18 16 22 M40 8 Q42 14 38 20 M62 12 Q64 18 60 22" fill="none" stroke="#9aa5b1"/><circle cx="30" cy="29" r="2.4" fill="#58b368" stroke="none"/><circle cx="49" cy="29" r="2.4" fill="#58b368" stroke="none"/></g></svg>
+      <div class="name">もつ鍋</div>
+      <div class="desc">ぷりぷりのもつとニラたっぷり。締めはちゃんぽん麺!</div>
+      <span class="where">3日目夜・楽天地</span>
+    </div>
+    <div class="zu">
+      <svg width="80" height="66" viewBox="0 0 80 66"><g stroke="#40382e" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"><path d="M12 28 L68 28 Q66 50 54 55 L26 55 Q14 50 12 28 Z" fill="#4a90d9"/><ellipse cx="40" cy="28" rx="28" ry="6" fill="#fdf8ec"/><path d="M20 27 Q24 30 28 27 Q32 30 36 27 Q40 30 44 27 Q48 30 52 27 Q56 30 60 27" fill="none" stroke="#f0c060"/><circle cx="34" cy="24" r="6" fill="#fff"/><path d="M31 24 Q34 20 37 24 Q34 27 31 24" fill="#e8574c" stroke="none"/><path d="M50 22 L58 12 M54 24 L64 16" stroke="#8b6f47"/><rect x="44" y="17" width="12" height="5" rx="2" fill="#58b368"/></g></svg>
+      <div class="name">屋台の博多ラーメン</div>
+      <div class="desc">とんこつ発祥の地!屋台では焼きラーメンもおすすめ。</div>
+      <span class="where">1日目夜・中洲屋台</span>
+    </div>
+    <div class="zu">
+      <svg width="80" height="66" viewBox="0 0 80 66"><g stroke="#40382e" stroke-width="2.5" stroke-linejoin="round"><path d="M16 40 Q14 26 26 22 Q38 18 44 26 Q50 34 42 44 Q32 52 22 48 Q17 46 16 40 Z" fill="#f08080"/><path d="M40 30 Q46 20 58 22 Q68 24 66 34 Q64 44 52 44 Q42 44 40 36 Z" fill="#f08080"/><g fill="#c0392b" stroke="none"><circle cx="26" cy="32" r="1.4"/><circle cx="33" cy="28" r="1.4"/><circle cx="30" cy="40" r="1.4"/><circle cx="52" cy="30" r="1.4"/><circle cx="58" cy="36" r="1.4"/><circle cx="47" cy="37" r="1.4"/></g><path d="M20 14 Q22 18 19 21 M28 10 Q30 14 27 17" fill="none" stroke="#9aa5b1" stroke-width="2" stroke-linecap="round"/></g></svg>
+      <div class="name">辛子明太子</div>
+      <div class="desc">博多土産の王様。焼きたての明太フランスは最高!</div>
+      <span class="where">1日目・フルフル博多🥖</span>
+    </div>
+    <div class="zu">
+      <svg width="80" height="66" viewBox="0 0 80 66"><g stroke="#40382e" stroke-width="2.5" stroke-linejoin="round"><path d="M40 60 Q14 46 17 24 Q19 10 40 14 Q61 10 63 24 Q66 46 40 60 Z" fill="#e8574c"/><path d="M28 8 L40 14 L52 8 M40 3 L40 14" stroke="#58b368" stroke-width="3.5" stroke-linecap="round" fill="none"/><g fill="#fff3b0" stroke="none"><circle cx="30" cy="26" r="2"/><circle cx="46" cy="24" r="2"/><circle cx="38" cy="36" r="2"/><circle cx="27" cy="40" r="2"/><circle cx="50" cy="38" r="2"/><circle cx="40" cy="48" r="2"/></g></g></svg>
+      <div class="name">あまおういちご</div>
+      <div class="desc">あかい・まるい・おおきい・うまい!福岡生まれの王様いちご。</div>
+      <span class="where">2日目・TANNAL</span>
+    </div>
+    <div class="zu">
+      <svg width="80" height="66" viewBox="0 0 80 66"><g stroke="#40382e" stroke-width="2.5" stroke-linejoin="round"><ellipse cx="40" cy="36" rx="26" ry="18" fill="#f0d9a8"/><path d="M20 30 Q26 26 30 30 M36 26 Q40 22 44 26 M50 30 Q56 26 60 30" fill="none" stroke="#c8a165" stroke-width="2" stroke-linecap="round"/><circle cx="40" cy="38" r="7" fill="none" stroke="#c0392b" stroke-width="2"/><path d="M40 33 L40 43 M35 38 L45 38 M36.5 34.5 L43.5 41.5 M43.5 34.5 L36.5 41.5" stroke="#c0392b" stroke-width="1.6" stroke-linecap="round"/></g></svg>
+      <div class="name">梅ヶ枝餅</div>
+      <div class="desc">太宰府名物のあんこ餅。焼きたてパリもち!</div>
+      <span class="where">作戦Bの時⛩️</span>
+    </div>
+    <div class="zu">
+      <svg width="80" height="66" viewBox="0 0 80 66"><g stroke="#40382e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 56 Q20 50 40 56 Q60 62 78 56" fill="none" stroke="#4a90d9" stroke-width="3"/><path d="M6 62 Q24 56 44 62 Q60 66 76 62" fill="none" stroke="#4a90d9" stroke-width="2"/><path d="M22 46 L24 18 M56 46 L54 18" stroke="#fff" stroke-width="5"/><path d="M22 46 L24 18 M56 46 L54 18" fill="none"/><path d="M16 18 Q40 10 64 18 L62 12 Q40 4 18 12 Z" fill="#fff"/><path d="M20 26 L60 26" /><circle cx="68" cy="10" r="5" fill="#f5a623"/></g></svg>
+      <div class="name">糸島の海</div>
+      <div class="desc">白い鳥居の夫婦岩と青い海。ドライブ日和になりますように!</div>
+      <span class="where">3日目・二見ヶ浦</span>
+    </div>
+  </div>
+
+  <!-- ================= お店メモ ================= -->
+  <h2 class="hand"><span class="num">8</span>お店メモ(営業時間・予約)</h2>
+  <table>
+    <tr><th>お店</th><th>営業時間</th><th>メモ</th></tr>
+    <tr><td><span class="shop">フルフル博多(祇園)</span><br>092-292-7838</td><td>10:00–19:00<br>火曜定休</td><td>明太フランス!電話で取り置きOK(1時間前まで)</td></tr>
+    <tr><td><span class="shop">天麩羅処ひらお 大名店</span><br>092-752-7900</td><td>10:30–20:30<br>火曜定休</td><td>予約不可・回転は早い</td></tr>
+    <tr><td><span class="shop">いちごや cafe TANNAL 大名</span><br>092-791-6209</td><td>日–木 9:00–22:00</td><td>無休</td></tr>
+    <tr><td><span class="shop">因幡うどん 渡辺通店</span><br>092-711-0708</td><td>日 11:00–20:00 (LO19:30)</td><td>年中無休</td></tr>
+    <tr><td><span class="shop">フルーツプラネット</span><br>092-791-9723</td><td>17:00–24:00<br>水曜定休</td><td>大名・夜のフルーツパフェ</td></tr>
+    <tr><td><span class="shop">弐ノ二 博多駅地下街店</span><br>092-412-0322</td><td>11:00–22:00 (LO21:00)</td><td>ほぼ無休・一人でも入りやすい</td></tr>
+    <tr><td><span class="shop">Parfaiteria beL 福岡</span><br>092-707-0980</td><td>日 18:00–24:00</td><td>定休なし</td></tr>
+    <tr><td><span class="shop">ノアン 糸島本店</span><br>092-322-6606</td><td>9:00–18:00<br>火木定休</td><td>店前P(契約者枠に注意)</td></tr>
+    <tr><td><span class="shop">糸島咖喱堂 今津本店</span><br>092-407-6673</td><td>11:00–18:00 (LO17:00)</td><td>不定休・IG確認/ネット予約可</td></tr>
+    <tr><td><span class="shop">無垢-muku-cafe</span><br>092-332-9965</td><td>11:30–19:00</td><td>不定休・IG確認/P15台</td></tr>
+    <tr><td><span class="shop">二代目 楽天地 博多口店</span><br>0120-869-107</td><td>月 17:00–23:00</td><td>要予約(ネットOK)</td></tr>
+  </table>
+
+  <!-- ================= 出発前 ================= -->
+  <h2 class="b hand"><span class="num">9</span>出発前のやることリスト</h2>
+  <div class="card">
+    <ul class="check">
+      <li><label><input type="checkbox"> スカイマークのオンラインチェックイン(前日〜)</label></li>
+      <li><label><input type="checkbox"> レンタカー予約(7/6 9:00頃〜18:00・博多駅周辺)</label></li>
+      <li><label><input type="checkbox"> 楽天地 博多口店 7/6 18:30 2名で予約</label></li>
+      <li><label><input type="checkbox"> 糸島咖喱堂・無垢cafeのInstagramで7/6の営業確認</label></li>
+      <li><label><input type="checkbox"> バスのモバイルチケット準備(メールでもOK)</label></li>
+      <li><label><input type="checkbox"> 柔道の観戦場所・時間を興治くんに最終確認</label></li>
+    </ul>
+  </div>
+
+  <!-- ================= 持ち物 ================= -->
+  <h2 class="g hand"><span class="num">10</span>持ち物リスト</h2>
+  <div class="card">
+    <ul class="check">
+      <li><label><input type="checkbox"> 予約メール(バス・飛行機・ホテル)</label></li>
+      <li><label><input type="checkbox"> モバイルバッテリー</label></li>
+      <li><label><input type="checkbox"> 日焼け止め・帽子(糸島ドライブ用)</label></li>
+      <li><label><input type="checkbox"> 歩きやすい靴(大濠公園・白糸の滝)</label></li>
+      <li><label><input type="checkbox"> 折りたたみ傘</label></li>
+      <li><label><input type="checkbox"> 常備薬・体温計</label></li>
+    </ul>
+  </div>
+
+  <!-- ================= 約束 ================= -->
+  <h2 class="o hand"><span class="num">11</span>旅の約束</h2>
+  <div class="card">
+    <ul class="rules">
+      <li>よく食べ、よく笑い、よく歩く!</li>
+      <li>写真をいっぱい撮る(柔道もごはんも)📷</li>
+      <li>疲れたら無理せず休憩する</li>
+      <li>ケンカをしない(したら梅ヶ枝餅をおごる)</li>
+    </ul>
+  </div>
+
+  <!-- ================= メモ ================= -->
+  <h2 class="hand"><span class="num">12</span>メモ</h2>
+  <span class="tape blue"></span>
+  <div class="free-memo">
+    <div class="ln"></div>
+    <div class="ln"></div>
+    <div class="ln"></div>
+    <div class="ln"></div>
+  </div>
+
+  <footer>〜 行ってきます!楽しい旅になりますように 〜</footer>
+</div>
+
+</body>
+</html>
