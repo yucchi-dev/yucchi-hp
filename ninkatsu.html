@@ -1027,6 +1027,7 @@ function renderFoodTab() {
 }
 
 function deleteMeal(ds, id) {
+  if(!confirm('この食事の記録を削除しますか？')) return;
   if(!appData.meals[ds]) return;
   appData.meals[ds]=appData.meals[ds].filter(m=>m.id!==id);
   if(!appData.meals[ds].length) delete appData.meals[ds];
@@ -1296,7 +1297,11 @@ function renderTempList() {
   if(!entries.length){el.innerHTML='<div class="empty-state"><div class="empty-icon">🌡️</div><div class="empty-txt">体温データがありません</div></div>';return;}
   el.innerHTML=entries.map(e=>{const d=fromStr(e.ds);return `<div class="temp-entry"><div class="temp-entry-date">${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日（${WEEKDAYS[d.getDay()]}）</div><div style="display:flex;align-items:center;gap:8px;"><div class="temp-entry-val">${e.t.toFixed(2)}<span>℃</span></div><button class="del-btn" onclick="deleteTemp('${e.ds}')">✕</button></div></div>`;}).join('');
 }
-function deleteTemp(ds) { delete appData.temperatures[ds]; persist(); renderTempTab(); }
+function deleteTemp(ds) {
+  const d=fromStr(ds);
+  if(!confirm(d.getMonth()+1+'月'+d.getDate()+'日の体温記録を削除しますか？')) return;
+  delete appData.temperatures[ds]; persist(); renderTempTab();
+}
 
 /* ===== TEST（検査薬）TAB ===== */
 const TEST_RESULT_STYLE={ '陽性':'color:var(--pink-500);font-weight:700;', 'うっすら':'color:#A9791E;font-weight:700;', '陰性':'color:#4E6A96;font-weight:700;' };
