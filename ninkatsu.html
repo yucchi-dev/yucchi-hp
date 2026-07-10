@@ -373,25 +373,17 @@
         </div>
       </div>
       <div class="card">
-        <div class="card-title">😴 睡眠時間の推移（体温と連動スクロール）</div>
+        <div class="card-title">😴 睡眠 × 🏢 勤務 × ⚡ 調子（体温と連動）</div>
         <div class="chart-scroll-wrap">
-          <svg id="sleep-axis" width="26" height="150"></svg>
-          <div class="chart-scroll" id="sleep-scroll"><svg id="sleep-chart" height="150"></svg></div>
-        </div>
-      </div>
-      <div class="card">
-        <div class="card-title">🏢 勤務時間と調子（連動スクロール）</div>
-        <div class="chart-scroll-wrap">
-          <svg id="work-axis" width="26" height="150"></svg>
-          <div class="chart-scroll" id="work-scroll"><svg id="work-chart" height="150"></svg></div>
+          <svg id="sleep-axis" width="26" height="170"></svg>
+          <div class="chart-scroll" id="sleep-scroll"><svg id="sleep-chart" height="170"></svg></div>
         </div>
         <div class="legend" style="padding:6px 2px 0;">
-          <div class="legend-item"><span style="width:10px;height:10px;background:#8FB8DE;display:inline-block;border-radius:2px;"></span>勤務時間</div>
-          <div class="legend-item">😊 調子よい</div>
-          <div class="legend-item">😐 ふつう</div>
-          <div class="legend-item">😵 イマイチ</div>
+          <div class="legend-item"><span style="width:12px;height:3px;background:#9C77C8;display:inline-block;border-radius:2px;"></span>睡眠（線）</div>
+          <div class="legend-item"><span style="width:10px;height:10px;background:#8FB8DE;display:inline-block;border-radius:2px;"></span>勤務（棒・実働）</div>
+          <div class="legend-item">😊😐😵 その日の調子</div>
         </div>
-        <p class="info-text" style="margin-top:8px;">前日の勤務が長い日→睡眠→翌日の顔マーク、と3つのグラフを縦に見比べると不調のパターンが見えてきます。</p>
+        <p class="info-text" style="margin-top:8px;">勤務の棒が高い→睡眠の線が下がる→翌日😵、のパターンが1枚で見えます。</p>
       </div>
       <div id="temp-list"></div>
     </div>
@@ -428,6 +420,10 @@
         <div class="settings-row">
           <div class="settings-label">生理期間（日）</div>
           <input type="number" id="setting-period" class="settings-input" min="1" max="10" onchange="saveSettings()">
+        </div>
+        <div class="settings-row">
+          <div class="settings-label">高温期ライン（℃）</div>
+          <input type="number" id="setting-hightemp" class="settings-input" min="36" max="37.5" step="0.05" onchange="saveSettings()">
         </div>
       </div>
       <div class="card">
@@ -901,12 +897,11 @@ function renderCalendar() {
       // 記録済みの🩵は右上バッジで表示（生理マークと重ならないように）
       const hasTiming=symsRaw.some(s=>normSym(s)==='🩵');
       // セル内テキスト: 睡眠＋（メモ優先、なければ症状名。🩵はバッジ表示済みなので除く）
+      // カレンダーは妊活情報に絞る（勤務・調子はグラフタブで見る）
       const slp=appData.sleep[ds];
       const slpTxt=slp?'😴'+sleepHours(slp.start,slp.end)+'h':'';
-      const wk=appData.work[ds];
-      const wkTxt=wk?'🏢'+workNetHours(wk)+'h':'';
       const noteBody=(memoRaw.replace(/\n/g,' ')||symsRaw.filter(s=>normSym(s)!=='🩵').map(s=>{const n=normSym(s);const p=n.split(' ');return p.length>1?p.slice(1).join(''):p[0];}).join(' ')).trim();
-      const cellNoteText=[slpTxt,wkTxt,noteBody].filter(Boolean).join(' ');
+      const cellNoteText=[slpTxt,noteBody].filter(Boolean).join(' ');
 
       // Icon in center（ヨガ表示中はヨガ目安アイコンを優先）
       let icon='';
@@ -925,7 +920,7 @@ function renderCalendar() {
         </div>
         <div class="day-icon-area">${icon}</div>
         ${noteHtml}
-        <div class="day-inds">${appData.condition[ds]?COND_EMOJI[appData.condition[ds]]:''}${hasTemp?'🌡':''}${hasTest?'🧪':''}</div>
+        <div class="day-inds">${hasTemp?'🌡':''}${hasTest?'🧪':''}</div>
       </div>`;
     }
     html+='</div>';
@@ -940,12 +935,11 @@ function renderCalMemos(year, month) {
   const entries = [];
   for (let d = 1; d <= dim; d++) {
     const ds = year+'-'+String(month+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+    // カレンダー下の一覧も妊活情報のみ（勤務・調子はグラフタブへ）
     const memo = appData.memos[ds] || '';
     const syms = appData.symptoms[ds] || [];
     const slp = appData.sleep[ds] || null;
-    const wk = appData.work[ds] || null;
-    const cond = appData.condition[ds] || null;
-    if (memo || syms.length || slp || wk || cond) entries.push({ ds, d, memo, syms, slp, wk, cond });
+    if (memo || syms.length || slp) entries.push({ ds, d, memo, syms, slp });
   }
   if (!entries.length) { el.innerHTML = ''; return; }
   const items = entries.map(e => {
@@ -953,12 +947,6 @@ function renderCalMemos(year, month) {
     const dateStr = (month+1)+'月'+e.d+'日（'+WEEKDAYS[dt.getDay()]+'）';
     const slpHtml = e.slp
       ? '<div class="cal-memo-syms"><span class="cal-memo-sym">😴 '+fmtSleepTime(e.slp.start)+'〜'+fmtSleepTime(e.slp.end)+'（'+sleepHours(e.slp.start,e.slp.end)+'時間）</span></div>'
-      : '';
-    const wkHtml = (e.wk||e.cond)
-      ? '<div class="cal-memo-syms">'
-        +(e.wk?'<span class="cal-memo-sym">🏢 '+fmtSleepTime(e.wk.start)+'〜'+fmtSleepTime(e.wk.end)+(e.wk.break?'・休憩'+e.wk.break+'分':'')+'（実働'+workNetHours(e.wk)+'時間）</span>':'')
-        +(e.cond?'<span class="cal-memo-sym">'+COND_EMOJI[e.cond]+' '+COND_LABEL[e.cond]+'</span>':'')
-        +'</div>'
       : '';
     const symsHtml = e.syms.length
       ? '<div class="cal-memo-syms">'+e.syms.map(s=>'<span class="cal-memo-sym">'+normSym(s)+'</span>').join('')+'</div>'
@@ -968,7 +956,7 @@ function renderCalMemos(year, month) {
       : '';
     return '<div class="cal-memo-item" onclick="openDayModal(\''+e.ds+'\')">'
       +'<div class="cal-memo-item-date">'+dateStr+'</div>'
-      +slpHtml+wkHtml+symsHtml+memoHtml
+      +slpHtml+symsHtml+memoHtml
       +'</div>';
   }).join('');
   el.innerHTML = '<div class="cal-memo-title">📝 この月のメモ・記録</div>'+items;
@@ -1276,13 +1264,13 @@ function chartRange() {
 }
 function renderTempTab() {
   const di=document.getElementById('temp-date-input'); if(!di.value) di.value=toStr(new Date());
-  drawChart(); drawSleepChart(); drawWorkChart(); renderTempList();
+  drawChart(); drawSleepChart(); renderTempList();
   initChartScrollSync();
   scrollChartsToEnd();
 }
-// 体温・睡眠・勤務のスクロールを連動させる
+// 体温と睡眠×勤務のスクロールを連動させる
 let chartSyncInit=false, chartScrolledOnce=false;
-function chartScrollEls(){ return ['temp-scroll','sleep-scroll','work-scroll'].map(id=>document.getElementById(id)); }
+function chartScrollEls(){ return ['temp-scroll','sleep-scroll'].map(id=>document.getElementById(id)); }
 function initChartScrollSync() {
   if(chartSyncInit) return; chartSyncInit=true;
   const els=chartScrollEls();
@@ -1297,7 +1285,6 @@ function scrollChartsToEnd() {
   if(chartScrolledOnce||els[0].scrollWidth<=els[0].clientWidth) return;
   els[0].scrollLeft=els[0].scrollWidth;
   els[1].scrollLeft=els[0].scrollLeft;
-  els[2].scrollLeft=els[0].scrollLeft;
   chartScrolledOnce=true;
 }
 // 過去〜未来の排卵イベントを推定（各生理開始の14日前＝直前周期の排卵、＋次回予測）
@@ -1312,12 +1299,14 @@ function drawChart() {
   const {start,end,n}=chartRange();
   const H=180, pT=12,pB=28, cH=H-pT-pB, W=n*DAY_W;
   const minT=35.5,maxT=37.5, todayStr=toStr(new Date());
+  const hi=parseFloat(appData.settings.highTemp)||36.65;  // 高温期ライン（設定で変更可）
+  const ticks=[...new Set([35.5,36.0,36.5,37.0,37.5,hi])].sort();
   const data=[];
   for(let i=0;i<n;i++){ const t=appData.temperatures[toStr(addDays(start,i))]; if(t!=null) data.push({i,t}); }
   const idxOf=d=>daysBetween(start,fromStr(toStr(d)));
   const xS=i=>i*DAY_W+DAY_W/2, yS=t=>pT+(1-(t-minT)/(maxT-minT))*cH;
   let s='';
-  const yB=yS(36.7);
+  const yB=yS(hi);
   s+=`<rect x="0" y="${pT}" width="${W}" height="${yB-pT}" fill="#FFF0F5"/>`;
   s+=`<rect x="0" y="${yB}" width="${W}" height="${pT+cH-yB}" fill="#EEF4FF"/>`;
   // ▼ 妊娠可能期の帯（排卵−5〜+3日）を薄い黄色で。排卵ズレも見込んで幅を持たせている
@@ -1326,7 +1315,7 @@ function drawChart() {
     if(fe<0||fs>n-1) return;
     s+=`<rect x="${(fs*DAY_W).toFixed(1)}" y="${pT}" width="${((fe-fs+1)*DAY_W).toFixed(1)}" height="${cH}" fill="#FFF6D6" opacity="0.75"/>`;
   });
-  [35.5,36.0,36.5,36.7,37.0,37.5].forEach(t=>{const y=yS(t),base=t===36.7;s+=`<line x1="0" y1="${y}" x2="${W}" y2="${y}" stroke="${base?'#FFB3D1':'#F0D8E8'}" stroke-width="${base?1.5:.5}" stroke-dasharray="${base?'4,3':''}"/>`;});
+  ticks.forEach(t=>{const y=yS(t),base=t===hi;s+=`<line x1="0" y1="${y}" x2="${W}" y2="${y}" stroke="${base?'#FFB3D1':'#F0D8E8'}" stroke-width="${base?1.5:.5}" stroke-dasharray="${base?'4,3':''}"/>`;});
   // ▼ 排卵予測日：オレンジの縦線
   getOvulationEvents().forEach(ov=>{ const i=idxOf(ov); if(i<0||i>n-1) return;
     s+=`<line x1="${xS(i).toFixed(1)}" y1="${pT}" x2="${xS(i).toFixed(1)}" y2="${pT+cH}" stroke="#F0A020" stroke-width="1.5" stroke-dasharray="3,2"/>`;});
@@ -1341,61 +1330,47 @@ function drawChart() {
   for(let i=0;i<n;i++){ if(appData.periods.includes(toStr(addDays(start,i)))){
     s+=`<line x1="${xS(i).toFixed(1)}" y1="${pT+cH-2}" x2="${xS(i).toFixed(1)}" y2="${pT+cH+2}" stroke="#F4A7B9" stroke-width="4" stroke-linecap="round"/>`;}}
   if(data.length>1)s+=`<path d="${data.map((p,i)=>`${i?'L':'M'}${xS(p.i).toFixed(1)},${yS(p.t).toFixed(1)}`).join(' ')}" stroke="#F4A7B9" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`;
-  data.forEach(p=>s+=`<circle cx="${xS(p.i).toFixed(1)}" cy="${yS(p.t).toFixed(1)}" r="4" fill="${p.t>=36.7?'#E85070':'#5090D8'}" stroke="white" stroke-width="1.5"/>`);
+  data.forEach(p=>s+=`<circle cx="${xS(p.i).toFixed(1)}" cy="${yS(p.t).toFixed(1)}" r="4" fill="${p.t>=hi?'#E85070':'#5090D8'}" stroke="white" stroke-width="1.5"/>`);
   svgEl.setAttribute('width',W); svgEl.setAttribute('height',H); svgEl.setAttribute('viewBox',`0 0 ${W} ${H}`); svgEl.innerHTML=s;
   // 左端固定のY軸ラベル
   let a='';
-  [35.5,36.0,36.5,36.7,37.0,37.5].forEach(t=>{a+=`<text x="30" y="${(yS(t)+3.5).toFixed(1)}" text-anchor="end" font-size="8" fill="${t===36.7?'#E06898':'#C8A8C0'}" font-weight="${t===36.7?'700':'400'}">${t.toFixed(1)}</text>`;});
+  ticks.forEach(t=>{a+=`<text x="30" y="${(yS(t)+3.5).toFixed(1)}" text-anchor="end" font-size="8" fill="${t===hi?'#E06898':'#C8A8C0'}" font-weight="${t===hi?'700':'400'}">${t.toFixed(2).replace(/0$/,'')}</text>`;});
   document.getElementById('temp-axis').innerHTML=a;
 }
-// 睡眠時間の推移グラフ（体温と同じ全期間・連動スクロール）
+// 睡眠（紫の線）＋勤務（青の棒・実働）＋調子（上部の顔）を1枚に。どちらも時間なので同じ0〜12hの軸
 function drawSleepChart() {
   const svgEl=document.getElementById('sleep-chart'); if(!svgEl) return;
   const {start,end,n}=chartRange();
-  const H=150, pT=12,pB=28, cH=H-pT-pB, W=n*DAY_W;
-  const minH=0,maxH=12;
+  const H=170, pT=16,pB=28, cH=H-pT-pB, W=n*DAY_W;
+  const maxH=12;
   const data=[];
   for(let i=0;i<n;i++){ const sl=appData.sleep[toStr(addDays(start,i))]; if(sl){const h=sleepHours(sl.start,sl.end); if(h!=null)data.push({i,h});} }
-  const xS=i=>i*DAY_W+DAY_W/2, yS=h=>pT+(1-(Math.min(h,maxH)-minH)/(maxH-minH))*cH;
+  const xS=i=>i*DAY_W+DAY_W/2, yS=h=>pT+(1-Math.min(h,maxH)/maxH)*cH;
   let s='';
-  // 目安ゾーン：7〜9時間を薄緑
+  // 睡眠の目安ゾーン：7〜9時間を薄緑
   s+=`<rect x="0" y="${yS(9).toFixed(1)}" width="${W}" height="${(yS(7)-yS(9)).toFixed(1)}" fill="#E6F7EC"/>`;
   [0,3,6,9,12].forEach(h=>{const y=yS(h);s+=`<line x1="0" y1="${y}" x2="${W}" y2="${y}" stroke="#EAE0EC" stroke-width="0.5"/>`;});
-  for(let i=0;i<n;i++){ const d=addDays(start,i), first=d.getDate()===1;
+  // 勤務8時間の目安ライン
+  s+=`<line x1="0" y1="${yS(8).toFixed(1)}" x2="${W}" y2="${yS(8).toFixed(1)}" stroke="#C8A8C0" stroke-width="1" stroke-dasharray="4,3"/>`;
+  for(let i=0;i<n;i++){
+    const d=addDays(start,i), ds=toStr(d), first=d.getDate()===1;
     if(first){ s+=`<line x1="${xS(i).toFixed(1)}" y1="${pT}" x2="${xS(i).toFixed(1)}" y2="${pT+cH}" stroke="#F0D0E0" stroke-width="1"/>`; }
     if(d.getDate()%5===0||first){ s+=`<text x="${xS(i).toFixed(1)}" y="${pT+cH+16}" text-anchor="middle" font-size="8" fill="${first?'#E06898':'#C8A8C0'}" font-weight="${first?'700':'400'}">${fmtMD(d)}</text>`; }
+    // 勤務の棒（背面）
+    const wk=appData.work[ds];
+    if(wk){ const h=workNetHours(wk); if(h!=null){
+      s+=`<rect x="${(xS(i)-DAY_W*0.3).toFixed(1)}" y="${yS(h).toFixed(1)}" width="${(DAY_W*0.6).toFixed(1)}" height="${(pT+cH-yS(h)).toFixed(1)}" fill="#8FB8DE" opacity="0.8" rx="1.5"/>`;}}
+    // 調子の顔マーク（上部）
+    const c=appData.condition[ds];
+    if(c){ s+=`<text x="${xS(i).toFixed(1)}" y="${pT-4}" text-anchor="middle" font-size="9">${COND_EMOJI[c]}</text>`; }
   }
+  // 睡眠の線＋点（前面）
   if(data.length>1)s+=`<path d="${data.map((p,i)=>`${i?'L':'M'}${xS(p.i).toFixed(1)},${yS(p.h).toFixed(1)}`).join(' ')}" stroke="#9C77C8" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`;
   data.forEach(p=>s+=`<circle cx="${xS(p.i).toFixed(1)}" cy="${yS(p.h).toFixed(1)}" r="3.5" fill="#9C77C8" stroke="white" stroke-width="1.5"/>`);
   svgEl.setAttribute('width',W); svgEl.setAttribute('height',H); svgEl.setAttribute('viewBox',`0 0 ${W} ${H}`); svgEl.innerHTML=s;
   let a='';
   [0,3,6,9,12].forEach(h=>{a+=`<text x="22" y="${(yS(h)+3.5).toFixed(1)}" text-anchor="end" font-size="8" fill="#C8A8C0">${h}h</text>`;});
   document.getElementById('sleep-axis').innerHTML=a;
-}
-// 勤務時間（青の棒）＋その日の調子（上部の顔マーク）。8時間ラインが目安
-function drawWorkChart() {
-  const svgEl=document.getElementById('work-chart'); if(!svgEl) return;
-  const {start,end,n}=chartRange();
-  const H=150, pT=16,pB=28, cH=H-pT-pB, W=n*DAY_W;
-  const maxH=12;
-  const xS=i=>i*DAY_W+DAY_W/2, yS=h=>pT+(1-Math.min(h,maxH)/maxH)*cH;
-  let s='';
-  [0,4,8,12].forEach(h=>{const y=yS(h);s+=`<line x1="0" y1="${y}" x2="${W}" y2="${y}" stroke="#EAE0EC" stroke-width="0.5"/>`;});
-  s+=`<line x1="0" y1="${yS(8).toFixed(1)}" x2="${W}" y2="${yS(8).toFixed(1)}" stroke="#C8A8C0" stroke-width="1" stroke-dasharray="4,3"/>`;
-  for(let i=0;i<n;i++){
-    const d=addDays(start,i), ds=toStr(d), first=d.getDate()===1;
-    if(first){ s+=`<line x1="${xS(i).toFixed(1)}" y1="${pT}" x2="${xS(i).toFixed(1)}" y2="${pT+cH}" stroke="#F0D0E0" stroke-width="1"/>`; }
-    if(d.getDate()%5===0||first){ s+=`<text x="${xS(i).toFixed(1)}" y="${pT+cH+16}" text-anchor="middle" font-size="8" fill="${first?'#E06898':'#C8A8C0'}" font-weight="${first?'700':'400'}">${fmtMD(d)}</text>`; }
-    const wk=appData.work[ds];
-    if(wk){ const h=workNetHours(wk); if(h!=null){
-      s+=`<rect x="${(xS(i)-DAY_W*0.3).toFixed(1)}" y="${yS(h).toFixed(1)}" width="${(DAY_W*0.6).toFixed(1)}" height="${(pT+cH-yS(h)).toFixed(1)}" fill="#8FB8DE" rx="1.5"/>`;}}
-    const c=appData.condition[ds];
-    if(c){ s+=`<text x="${xS(i).toFixed(1)}" y="${pT-4}" text-anchor="middle" font-size="9">${COND_EMOJI[c]}</text>`; }
-  }
-  svgEl.setAttribute('width',W); svgEl.setAttribute('height',H); svgEl.setAttribute('viewBox',`0 0 ${W} ${H}`); svgEl.innerHTML=s;
-  let a='';
-  [0,4,8,12].forEach(h=>{a+=`<text x="22" y="${(yS(h)+3.5).toFixed(1)}" text-anchor="end" font-size="8" fill="#C8A8C0">${h}h</text>`;});
-  document.getElementById('work-axis').innerHTML=a;
 }
 function addTemperature() {
   const ds=document.getElementById('temp-date-input').value, raw=document.getElementById('temp-val-input').value;
@@ -1467,11 +1442,13 @@ function renderTestTab() {
 function loadSettings() {
   document.getElementById('setting-cycle').value=appData.settings.cycleLength;
   document.getElementById('setting-period').value=appData.settings.periodLength;
+  document.getElementById('setting-hightemp').value=appData.settings.highTemp||36.65;
   document.getElementById('setting-apikey').value=appData.settings.claudeApiKey||'';
 }
 function saveSettings() {
   appData.settings.cycleLength=parseInt(document.getElementById('setting-cycle').value)||28;
   appData.settings.periodLength=parseInt(document.getElementById('setting-period').value)||5;
+  appData.settings.highTemp=parseFloat(document.getElementById('setting-hightemp').value)||36.65;
   appData.settings.claudeApiKey=document.getElementById('setting-apikey').value.trim();
   persist(); showToast('設定を保存しました');
 }
