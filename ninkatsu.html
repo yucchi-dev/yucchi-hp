@@ -530,6 +530,10 @@
             <label>退勤</label>
             <input type="time" id="modal-work-end" onfocus="prefillSleep(this,'now')" oninput="updateWorkDur()">
           </div>
+          <div class="sleep-field">
+            <label>休憩(分)</label>
+            <input type="number" id="modal-work-break" value="60" min="0" step="5" style="width:70px;" oninput="updateWorkDur()">
+          </div>
           <span class="sleep-dur" id="modal-work-dur"></span>
           <button class="sleep-clear" onclick="clearWork()">✕ クリア</button>
         </div>
@@ -715,15 +719,22 @@ function prefillSleep(inp,base) {
   updateSleepDur(); updateWorkDur();
 }
 /* ===== WORK & CONDITION（復職サポート）===== */
+// 正味の勤務時間 = (退勤-出勤) - 休憩。マイナスにはしない
+function workNetHours(wk) {
+  const h=sleepHours(wk.start,wk.end); if(h==null) return null;
+  return Math.max(0, Math.round((h-(wk.break||0)/60)*10)/10);
+}
 function updateWorkDur() {
   const s=document.getElementById('modal-work-start'), e=document.getElementById('modal-work-end');
   if(!s||!e) return;
-  const h=sleepHours(s.value,e.value);
-  document.getElementById('modal-work-dur').textContent=h!=null?h+'時間':'';
+  const br=parseInt(document.getElementById('modal-work-break').value)||0;
+  const h=workNetHours({start:s.value,end:e.value,break:br});
+  document.getElementById('modal-work-dur').textContent=h!=null?'実働'+h+'時間':'';
 }
 function clearWork() {
   document.getElementById('modal-work-start').value='';
   document.getElementById('modal-work-end').value='';
+  document.getElementById('modal-work-break').value='60';
   updateWorkDur();
 }
 const COND_OPTS=[['good','😊 良い'],['ok','😐 ふつう'],['bad','😵 イマイチ']];
@@ -893,7 +904,7 @@ function renderCalendar() {
       const slp=appData.sleep[ds];
       const slpTxt=slp?'😴'+sleepHours(slp.start,slp.end)+'h':'';
       const wk=appData.work[ds];
-      const wkTxt=wk?'🏢'+sleepHours(wk.start,wk.end)+'h':'';
+      const wkTxt=wk?'🏢'+workNetHours(wk)+'h':'';
       const noteBody=(memoRaw.replace(/\n/g,' ')||symsRaw.filter(s=>normSym(s)!=='🩵').map(s=>{const n=normSym(s);const p=n.split(' ');return p.length>1?p.slice(1).join(''):p[0];}).join(' ')).trim();
       const cellNoteText=[slpTxt,wkTxt,noteBody].filter(Boolean).join(' ');
 
@@ -945,7 +956,7 @@ function renderCalMemos(year, month) {
       : '';
     const wkHtml = (e.wk||e.cond)
       ? '<div class="cal-memo-syms">'
-        +(e.wk?'<span class="cal-memo-sym">🏢 '+fmtSleepTime(e.wk.start)+'〜'+fmtSleepTime(e.wk.end)+'（'+sleepHours(e.wk.start,e.wk.end)+'時間）</span>':'')
+        +(e.wk?'<span class="cal-memo-sym">🏢 '+fmtSleepTime(e.wk.start)+'〜'+fmtSleepTime(e.wk.end)+(e.wk.break?'・休憩'+e.wk.break+'分':'')+'（実働'+workNetHours(e.wk)+'時間）</span>':'')
         +(e.cond?'<span class="cal-memo-sym">'+COND_EMOJI[e.cond]+' '+COND_LABEL[e.cond]+'</span>':'')
         +'</div>'
       : '';
@@ -976,6 +987,7 @@ function openDayModal(ds) {
   const wk=appData.work[ds]||{};
   document.getElementById('modal-work-start').value=wk.start||'';
   document.getElementById('modal-work-end').value=wk.end||'';
+  document.getElementById('modal-work-break').value=wk.break!=null?wk.break:60;
   updateWorkDur();
   selCondition=appData.condition[ds]||null;
   renderCondToggle();
@@ -1025,7 +1037,8 @@ function saveDay() {
   const ss=document.getElementById('modal-sleep-start').value, se=document.getElementById('modal-sleep-end').value;
   if(ss&&se) appData.sleep[selDate]={start:ss,end:se}; else delete appData.sleep[selDate];
   const ws=document.getElementById('modal-work-start').value, we=document.getElementById('modal-work-end').value;
-  if(ws&&we) appData.work[selDate]={start:ws,end:we}; else delete appData.work[selDate];
+  const wb=parseInt(document.getElementById('modal-work-break').value)||0;
+  if(ws&&we) appData.work[selDate]={start:ws,end:we,break:wb}; else delete appData.work[selDate];
   if(selCondition) appData.condition[selDate]=selCondition; else delete appData.condition[selDate];
   if(selSymptoms.size) appData.symptoms[selDate]=[...selSymptoms]; else delete appData.symptoms[selDate];
   if(selPregTest) appData.pregTests[selDate]=selPregTest; else delete appData.pregTests[selDate];
@@ -1374,7 +1387,7 @@ function drawWorkChart() {
     if(first){ s+=`<line x1="${xS(i).toFixed(1)}" y1="${pT}" x2="${xS(i).toFixed(1)}" y2="${pT+cH}" stroke="#F0D0E0" stroke-width="1"/>`; }
     if(d.getDate()%5===0||first){ s+=`<text x="${xS(i).toFixed(1)}" y="${pT+cH+16}" text-anchor="middle" font-size="8" fill="${first?'#E06898':'#C8A8C0'}" font-weight="${first?'700':'400'}">${fmtMD(d)}</text>`; }
     const wk=appData.work[ds];
-    if(wk){ const h=sleepHours(wk.start,wk.end); if(h!=null){
+    if(wk){ const h=workNetHours(wk); if(h!=null){
       s+=`<rect x="${(xS(i)-DAY_W*0.3).toFixed(1)}" y="${yS(h).toFixed(1)}" width="${(DAY_W*0.6).toFixed(1)}" height="${(pT+cH-yS(h)).toFixed(1)}" fill="#8FB8DE" rx="1.5"/>`;}}
     const c=appData.condition[ds];
     if(c){ s+=`<text x="${xS(i).toFixed(1)}" y="${pT-4}" text-anchor="middle" font-size="9">${COND_EMOJI[c]}</text>`; }
