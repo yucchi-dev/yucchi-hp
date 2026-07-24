@@ -308,10 +308,6 @@
       </div>
     </div>
     <div id="cycle-info-box" class="cycle-info-box"></div>
-    <div class="cal-memo-section" style="padding-top:0;">
-      <div class="cal-memo-title">📈 周期の記録（全期間）</div>
-      <div id="cycle-history"></div>
-    </div>
     <div class="dow-header">
       <div class="dow-label">日</div><div class="dow-label">月</div><div class="dow-label">火</div>
       <div class="dow-label">水</div><div class="dow-label">木</div><div class="dow-label">金</div>
@@ -394,9 +390,29 @@
     </div>
   </div>
 
-  <!-- ── TEST（検査薬）──────────────────────────── -->
+  <!-- ── TEST（検査薬・周期）──────────────────────── -->
   <div id="tab-test" class="tab-panel">
     <div class="section-pad">
+      <div class="card">
+        <div class="card-title">📈 周期の記録（全期間）</div>
+        <div id="cycle-history"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">⚙️ 排卵予測に使う周期</div>
+        <div class="test-result-toggle" style="margin-bottom:8px;">
+          <button class="test-btn" id="cyclemode-auto" onclick="setCycleMode('auto')">📊 自動（実測平均）</button>
+          <button class="test-btn" id="cyclemode-manual" onclick="setCycleMode('manual')">🖊 手動で指定</button>
+        </div>
+        <p class="info-text" id="cycle-auto-note" style="margin-bottom:10px;"></p>
+        <div class="settings-row">
+          <div class="settings-label">周期の目安（日）</div>
+          <div style="display:flex;align-items:center;gap:6px;">
+            <input type="number" id="setting-cycle-min" class="settings-input" style="width:64px;" min="20" max="60" onchange="saveSettings()" onfocus="this.select()">
+            <span style="font-size:13px;color:var(--text-medium);">〜</span>
+            <input type="number" id="setting-cycle-max" class="settings-input" style="width:64px;" min="20" max="60" onchange="saveSettings()" onfocus="this.select()">
+          </div>
+        </div>
+      </div>
       <div class="card" id="preg-timing-card">
         <div class="card-title">🧪 妊娠検査薬 いつ検査できる？</div>
         <div id="preg-timing-body"></div>
@@ -417,25 +433,8 @@
   <div id="tab-settings" class="tab-panel">
     <div class="section-pad">
       <div class="card">
-        <div class="card-title">⚙️ サイクル設定</div>
-        <div class="settings-label" style="margin-bottom:8px;">排卵予測に使う周期</div>
-        <div class="test-result-toggle" style="margin-bottom:8px;">
-          <button class="test-btn" id="cyclemode-auto" onclick="setCycleMode('auto')">📊 自動（実測平均）</button>
-          <button class="test-btn" id="cyclemode-manual" onclick="setCycleMode('manual')">🖊 手動で指定</button>
-        </div>
-        <p class="info-text" id="cycle-auto-note" style="margin-bottom:10px;"></p>
-        <div class="settings-row" id="cycle-auto-row">
-          <div class="settings-label">生理周期（日）の初期値</div>
-          <input type="number" id="setting-cycle" class="settings-input" min="20" max="45" onchange="saveSettings()" onfocus="this.select()">
-        </div>
-        <div class="settings-row" id="cycle-manual-row" style="display:none;">
-          <div class="settings-label">周期の目安（日）</div>
-          <div style="display:flex;align-items:center;gap:6px;">
-            <input type="number" id="setting-cycle-min" class="settings-input" style="width:64px;" min="20" max="60" onchange="saveSettings()" onfocus="this.select()">
-            <span style="font-size:13px;color:var(--text-medium);">〜</span>
-            <input type="number" id="setting-cycle-max" class="settings-input" style="width:64px;" min="20" max="60" onchange="saveSettings()" onfocus="this.select()">
-          </div>
-        </div>
+        <div class="card-title">⚙️ 基本設定</div>
+        <p class="info-text" style="margin-bottom:10px;">生理周期の予測設定は「検査」タブに移動しました。</p>
         <div class="settings-row">
           <div class="settings-label">生理期間（日）</div>
           <input type="number" id="setting-period" class="settings-input" min="1" max="10" onchange="saveSettings()" onfocus="this.select()">
@@ -788,17 +787,19 @@ function getCycleRange() {
   const a=appData.settings.cycleMin||28, b=appData.settings.cycleMax||a;
   return [Math.min(a,b), Math.max(a,b)];
 }
-// cycleMode='manual' の場合は実測データがあっても手動指定の周期（範囲の中央値）を優先する（周期が不安定な時期向け）
+// cycleMode='manual' なら実測データがあっても常にレンジの中央値を使う。
+// 'auto' でも実測2回に満たない間は同じレンジをフォールバックとして使う
 function getAvgCycle() {
-  if(appData.settings.cycleMode==='manual') {
-    const [lo,hi]=getCycleRange();
-    return Math.round((lo+hi)/2);
+  if(appData.settings.cycleMode!=='manual') {
+    const actual=getActualAvgCycle(); if(actual!=null) return actual;
   }
-  return getActualAvgCycle() ?? appData.settings.cycleLength;
+  const [lo,hi]=getCycleRange();
+  return Math.round((lo+hi)/2);
 }
-// 手動範囲指定の「幅」の半分。排卵日・妊娠可能期間・タイミング窓を前後に広げるのに使う
+// レンジの半幅。排卵日・妊娠可能期間・タイミング窓を前後に広げるのに使う。
+// 実測平均が使える時（auto×2周期以上）は幅を持たせず、それ以外はレンジの幅ぶん広げる
 function getCyclePad() {
-  if(appData.settings.cycleMode!=='manual') return 0;
+  if(appData.settings.cycleMode!=='manual' && getActualAvgCycle()!=null) return 0;
   const [lo,hi]=getCycleRange();
   return Math.max(0, Math.round((hi-lo)/2));
 }
@@ -827,7 +828,7 @@ function switchTab(name) {
   document.getElementById('nav-'+name).classList.add('active');
   if(name==='calendar') renderCalendar();
   if(name==='temp')     renderTempTab();
-  if(name==='test')     renderTestTab();
+  if(name==='test')     { loadCycleSettings(); renderTestTab(); }
   if(name==='settings') loadSettings();
 }
 
@@ -1493,6 +1494,7 @@ function deleteTemp(ds) {
 /* ===== TEST（検査薬）TAB ===== */
 const TEST_RESULT_STYLE={ '陽性':'color:var(--pink-500);font-weight:700;', 'うっすら':'color:#A9791E;font-weight:700;', '陰性':'color:#4E6A96;font-weight:700;' };
 function renderTestTab() {
+  renderCycleHistory();
   const pred=getPredictions();
   const pregEl=document.getElementById('preg-timing-body');
   const lhEl=document.getElementById('lh-timing-body');
@@ -1537,34 +1539,34 @@ function setCycleMode(mode) {
   appData.settings.cycleMode=mode; persist(); loadSettings();
   showToast(mode==='manual'?'手動指定に切り替えました':'自動計算に切り替えました');
 }
+// アプリ設定（生理期間・高温期ライン・APIキー）＝設定タブを開いた時に読み込む
 function loadSettings() {
-  document.getElementById('setting-cycle').value=appData.settings.cycleLength;
   document.getElementById('setting-period').value=appData.settings.periodLength;
   document.getElementById('setting-hightemp').value=appData.settings.highTemp||36.65;
   document.getElementById('setting-apikey').value=appData.settings.claudeApiKey||'';
+}
+// 周期の予測設定（自動/手動トグル・レンジ入力）＝検査タブを開いた時に読み込む。入力欄は常に表示（モードで隠さない）
+function loadCycleSettings() {
   document.getElementById('setting-cycle-min').value=appData.settings.cycleMin;
   document.getElementById('setting-cycle-max').value=appData.settings.cycleMax;
 
   const mode=appData.settings.cycleMode||'auto';
   document.getElementById('cyclemode-auto').classList.toggle('on-good', mode==='auto');
   document.getElementById('cyclemode-manual').classList.toggle('on-good', mode==='manual');
-  document.getElementById('cycle-auto-row').style.display = mode==='manual' ? 'none' : '';
-  document.getElementById('cycle-manual-row').style.display = mode==='manual' ? '' : 'none';
 
   const starts=getPeriodStarts(), note=document.getElementById('cycle-auto-note');
   if(mode==='manual') {
     const pad=getCyclePad();
     note.textContent = `🖊 手動指定モード：実測データに関わらず、${getCycleRange().join('〜')}日の周期で予測します（中央値${getAvgCycle()}日、妊娠可能期間は前後${pad}日広めに表示）。周期が安定してきたら「自動」に戻すのがおすすめです。`;
   } else if(starts.length>=2) {
-    note.textContent = `📊 生理記録が${starts.length}回分あるので、実際の周期（平均${getAvgCycle()}日）を自動で使っています。下の「初期値」は使われません。`;
+    note.textContent = `📊 生理記録が${starts.length}回分あるので、実際の周期（平均${getAvgCycle()}日）を自動で使っています。下の周期の目安は、実測が2回分たまるまでの参考値です。`;
   } else {
-    note.textContent = '生理記録が2回分たまるまでは、下の初期値をもとに予測します。';
+    note.textContent = '生理記録が2回分たまるまでは、下の周期の目安をもとに予測します。';
   }
 }
 // 数字入力欄は既存の値に追記されて桁溢れしやすいため、保存時に必ず妥当な範囲へ収める
 const clamp=(v,lo,hi)=>Math.min(hi,Math.max(lo,v));
 function saveSettings() {
-  appData.settings.cycleLength=clamp(parseInt(document.getElementById('setting-cycle').value)||28, 20, 60);
   appData.settings.periodLength=clamp(parseInt(document.getElementById('setting-period').value)||5, 1, 14);
   appData.settings.highTemp=clamp(parseFloat(document.getElementById('setting-hightemp').value)||36.65, 36, 37.5);
   // 最短・最長は片方ずつ入力→都度保存されるため、ここでは入れ替えない
@@ -1572,7 +1574,7 @@ function saveSettings() {
   // 大小の解釈は使う側（getCycleRange）でその都度行う
   appData.settings.cycleMin=clamp(parseInt(document.getElementById('setting-cycle-min').value)||28, 20, 60);
   appData.settings.cycleMax=clamp(parseInt(document.getElementById('setting-cycle-max').value)||28, 20, 60);
-  loadSettings();  // クランプ後の値を入力欄に反映
+  loadSettings(); loadCycleSettings();  // クランプ後の値を入力欄に反映
   appData.settings.claudeApiKey=document.getElementById('setting-apikey').value.trim();
   persist(); showToast('設定を保存しました');
 }
