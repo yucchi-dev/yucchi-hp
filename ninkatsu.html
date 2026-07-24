@@ -308,6 +308,10 @@
       </div>
     </div>
     <div id="cycle-info-box" class="cycle-info-box"></div>
+    <div class="cal-memo-section" style="padding-top:0;">
+      <div class="cal-memo-title">📈 周期の記録（全期間）</div>
+      <div id="cycle-history"></div>
+    </div>
     <div class="dow-header">
       <div class="dow-label">日</div><div class="dow-label">月</div><div class="dow-label">火</div>
       <div class="dow-label">水</div><div class="dow-label">木</div><div class="dow-label">金</div>
@@ -322,10 +326,6 @@
       <div class="legend-item"><div class="legend-dot" style="background:#F3EEFF;border:1px solid #C8A8E0;"></div>PMS期間</div>
     </div>
     <div id="cal-memos" class="cal-memo-section"></div>
-    <div class="cal-memo-section">
-      <div class="cal-memo-title">📈 周期の記録（全期間）</div>
-      <div id="cycle-history"></div>
-    </div>
   </div>
 
   <!-- ── FOOD ──────────────────────────────────── -->
@@ -374,6 +374,7 @@
           <div class="legend-item"><span style="width:12px;height:3px;background:#F4A7B9;display:inline-block;"></span>生理日</div>
           <div class="legend-item"><span style="width:12px;height:10px;background:#FFF6D6;border:1px solid #E8C860;display:inline-block;"></span>妊娠可能期</div>
           <div class="legend-item"><span style="width:2px;height:12px;background:#F0A020;display:inline-block;"></span>排卵予測</div>
+          <div class="legend-item"><span style="width:2px;height:12px;background:#E85070;display:inline-block;opacity:0.6;"></span>周期の区切り</div>
         </div>
       </div>
       <div class="card">
@@ -423,9 +424,17 @@
           <button class="test-btn" id="cyclemode-manual" onclick="setCycleMode('manual')">🖊 手動で指定</button>
         </div>
         <p class="info-text" id="cycle-auto-note" style="margin-bottom:10px;"></p>
-        <div class="settings-row">
-          <div class="settings-label" id="setting-cycle-label">生理周期（日）</div>
+        <div class="settings-row" id="cycle-auto-row">
+          <div class="settings-label">生理周期（日）の初期値</div>
           <input type="number" id="setting-cycle" class="settings-input" min="20" max="45" onchange="saveSettings()" onfocus="this.select()">
+        </div>
+        <div class="settings-row" id="cycle-manual-row" style="display:none;">
+          <div class="settings-label">周期の目安（日）</div>
+          <div style="display:flex;align-items:center;gap:6px;">
+            <input type="number" id="setting-cycle-min" class="settings-input" style="width:64px;" min="20" max="60" onchange="saveSettings()" onfocus="this.select()">
+            <span style="font-size:13px;color:var(--text-medium);">〜</span>
+            <input type="number" id="setting-cycle-max" class="settings-input" style="width:64px;" min="20" max="60" onchange="saveSettings()" onfocus="this.select()">
+          </div>
         </div>
         <div class="settings-row">
           <div class="settings-label">生理期間（日）</div>
@@ -667,6 +676,8 @@ if(!appData.meals) appData.meals={};
 if(!appData.work) appData.work={};              // 勤務時間: {日付: {start,end}}
 if(!appData.condition) appData.condition={};    // その日の調子: {日付: 'good'|'ok'|'bad'}
 if(!appData.settings.cycleMode) appData.settings.cycleMode='auto';  // 'auto'=実測平均 / 'manual'=手動指定
+if(!appData.settings.cycleMin) appData.settings.cycleMin=appData.settings.cycleLength||28;
+if(!appData.settings.cycleMax) appData.settings.cycleMax=appData.settings.cycleMin;
 
 // migrate from v1
 (() => {
@@ -766,18 +777,36 @@ function getPeriodStarts() {
   for (let i=1;i<sorted.length;i++) if(daysBetween(fromStr(sorted[i-1]),fromStr(sorted[i]))>1) starts.push(sorted[i]);
   return starts;
 }
-// cycleMode='manual' の場合は実測データがあっても手動指定の周期を優先する（周期が不安定な時期向け）
-function getAvgCycle() {
-  if(appData.settings.cycleMode==='manual') return appData.settings.cycleLength;
-  const s=getPeriodStarts(); if(s.length<2) return appData.settings.cycleLength;
+// 実際に記録した生理から計算した平均周期（モードに関わらず・履歴表示用）。2回未満ならnull
+function getActualAvgCycle() {
+  const s=getPeriodStarts(); if(s.length<2) return null;
   let t=0; for(let i=1;i<s.length;i++) t+=daysBetween(fromStr(s[i-1]),fromStr(s[i]));
   return Math.round(t/(s.length-1));
 }
+// 手動指定の最短・最長は入力欄にどちらの数字が入っていても大小を問わず解釈する
+function getCycleRange() {
+  const a=appData.settings.cycleMin||28, b=appData.settings.cycleMax||a;
+  return [Math.min(a,b), Math.max(a,b)];
+}
+// cycleMode='manual' の場合は実測データがあっても手動指定の周期（範囲の中央値）を優先する（周期が不安定な時期向け）
+function getAvgCycle() {
+  if(appData.settings.cycleMode==='manual') {
+    const [lo,hi]=getCycleRange();
+    return Math.round((lo+hi)/2);
+  }
+  return getActualAvgCycle() ?? appData.settings.cycleLength;
+}
+// 手動範囲指定の「幅」の半分。排卵日・妊娠可能期間・タイミング窓を前後に広げるのに使う
+function getCyclePad() {
+  if(appData.settings.cycleMode!=='manual') return 0;
+  const [lo,hi]=getCycleRange();
+  return Math.max(0, Math.round((hi-lo)/2));
+}
 function getPredictions() {
   const starts=getPeriodStarts(); if(!starts.length) return null;
-  const last=fromStr(starts[starts.length-1]); const cycle=getAvgCycle();
+  const last=fromStr(starts[starts.length-1]); const cycle=getAvgCycle(); const pad=getCyclePad();
   const nextPeriod=addDays(last,cycle); const ovulation=addDays(nextPeriod,-14);
-  return { nextPeriod, ovulation, cycle, fertileStart:addDays(ovulation,-5), fertileEnd:addDays(ovulation,+3) };
+  return { nextPeriod, ovulation, cycle, pad, fertileStart:addDays(ovulation,-5-pad), fertileEnd:addDays(ovulation,+3+pad) };
 }
 
 /* ===== APP STATE ===== */
@@ -821,12 +850,12 @@ function yogaAdvice(d, pred, isPeriod) {
   if(!prev) return null;  // 記録が始まる前の日
   // この日が属する周期の排卵日：次の実記録の生理から逆算、なければ予測値
   const next=starts.find(s=>fromStr(s)>d);
-  let ov=null;
+  let ov=null, pad=0;
   if(next) ov=addDays(fromStr(next),-14);
-  else if(pred) ov=pred.ovulation;
+  else if(pred) { ov=pred.ovulation; pad=pred.pad||0; }  // 未来の予測日は手動範囲の幅ぶん早めに慎重側へ
   if(!ov) return null;
   if(d>ov) return {level:'rest', icon:'⛔', label:'お休み（高温期）', note:'排卵後は妊娠の可能性があるためヨガは完全お休み。次の生理が実際に来たら再開です。'};
-  if(d>=addDays(ov,-5)) return {level:'caution', icon:'⚠️', label:'妊娠可能期', note:'ホットヨガは×。やるなら常温ヨガの軽めまで。逆転・ねじりの強いポーズも控えめに。'};
+  if(d>=addDays(ov,-5-pad)) return {level:'caution', icon:'⚠️', label:'妊娠可能期', note:'ホットヨガは×。やるなら常温ヨガの軽めまで。逆転・ねじりの強いポーズも控えめに。'};
   return {level:'ok', icon:'🧘', label:'卵胞期', note:'一番しっかり動ける時期。ホットヨガもOKの目安。'};
 }
 
@@ -844,13 +873,15 @@ function renderCalendar() {
   if (!pred) {
     box.innerHTML='<div class="cycle-hint">生理日をタップして記録すると、排卵日・タイミングが予測されます 🌸</div>';
   } else if (cycleView==='ninkyo') {
-    const ovD=pred.ovulation, fertS=pred.fertileStart, fertE=pred.fertileEnd;
-    const timingS=addDays(ovD,-1), timingE=addDays(ovD,3);
+    const ovD=pred.ovulation, fertS=pred.fertileStart, fertE=pred.fertileEnd, pad=pred.pad||0;
+    const timingS=addDays(ovD,-1-pad), timingE=addDays(ovD,3+pad);
     const dov=daysBetween(new Date(),ovD);
     const ovLabel=dov>0?dov+'日後':dov===0?'今日！':'終了';
+    const ovText = pad>0 ? fmtDate(addDays(ovD,-pad))+'〜'+fmtDate(addDays(ovD,pad))+'（'+ovLabel+'）' : fmtDate(ovD)+'（'+ovLabel+'）';
+    const cycleText = pad>0 ? getCycleRange().join('〜')+'日' : pred.cycle+'日';
     box.innerHTML=`<div class="cycle-info-grid">
-      <div class="ci-item"><span class="ci-label">推定周期</span><span class="ci-value">${pred.cycle}日</span></div>
-      <div class="ci-item"><span class="ci-label">排卵予測日</span><span class="ci-value accent">${fmtDate(ovD)}（${ovLabel}）</span></div>
+      <div class="ci-item"><span class="ci-label">推定周期</span><span class="ci-value">${cycleText}</span></div>
+      <div class="ci-item"><span class="ci-label">排卵予測日</span><span class="ci-value accent">${ovText}</span></div>
       <div class="ci-item"><span class="ci-label">妊娠可能期間</span><span class="ci-value">${fmtDate(fertS)}〜${fmtDate(fertE)}</span></div>
       <div class="ci-item"><span class="ci-label">♥ 仲良しタイミング</span><span class="ci-value accent">${fmtDate(timingS)}〜${fmtDate(timingE)}</span></div>
     </div>`;
@@ -892,7 +923,7 @@ function renderCalendar() {
         const predEnd=addDays(pred.nextPeriod, appData.settings.periodLength-1);
         isPredPeriod = !isPeriod && d>=pred.nextPeriod && d<=predEnd;
         isOv   = !isPeriod && toStr(pred.ovulation)===ds;
-        isTiming = !isPeriod && d>=addDays(pred.ovulation,-1) && d<=addDays(pred.ovulation,3);
+        isTiming = !isPeriod && d>=addDays(pred.ovulation,-1-(pred.pad||0)) && d<=addDays(pred.ovulation,3+(pred.pad||0));
         const isFert = !isPeriod && d>=pred.fertileStart && d<=pred.fertileEnd;
         isPMS  = !isPeriod && !isPredPeriod && d>=addDays(pred.nextPeriod,-7) && d<pred.nextPeriod;
 
@@ -964,7 +995,8 @@ function renderCycleHistory() {
     }
   }
   if(starts.length>=2) {
-    html+=`<div class="cal-memo-item" style="background:var(--pink-50);"><div class="cal-memo-item-date">平均周期</div><div class="cal-memo-text" style="font-weight:700;color:var(--pink-500);">${getAvgCycle()}日${appData.settings.cycleMode==='manual'?'（現在は手動指定を予測に使用中）':''}</div></div>`;
+    const manualNote = appData.settings.cycleMode==='manual' ? `（予測には手動指定の${getCycleRange().join('〜')}日を使用中）` : '';
+    html+=`<div class="cal-memo-item" style="background:var(--pink-50);"><div class="cal-memo-item-date">実測の平均周期</div><div class="cal-memo-text" style="font-weight:700;color:var(--pink-500);">${getActualAvgCycle()}日${manualNote}</div></div>`;
   }
   el.innerHTML=html;
 }
@@ -1308,7 +1340,7 @@ function renderTempTab() {
   const di=document.getElementById('temp-date-input'); if(!di.value) di.value=toStr(new Date());
   drawChart(); drawSleepChart(); renderTempList();
   initChartScrollSync();
-  scrollChartsToEnd();
+  scrollChartsToToday();
 }
 // 体温と睡眠×勤務のスクロールを連動させる
 let chartSyncInit=false, chartScrolledOnce=false;
@@ -1321,12 +1353,17 @@ function initChartScrollSync() {
     els.forEach(b=>{ if(b!==a && Math.abs(b.scrollLeft-a.scrollLeft)>1) b.scrollLeft=a.scrollLeft; });
   }));
 }
-// 初回表示時は右端（今日〜未来側）へ
-function scrollChartsToEnd() {
+// 初回表示時は「今日」が画面内に来る位置へ（右端＝未来の予測終端まで飛ばすと今日が見えなくなるため）
+function scrollChartsToToday() {
   const els=chartScrollEls();
   if(chartScrolledOnce||els[0].scrollWidth<=els[0].clientWidth) return;
-  els[0].scrollLeft=els[0].scrollWidth;
-  els[1].scrollLeft=els[0].scrollLeft;
+  const {start}=chartRange();
+  const todayIdx=daysBetween(start, fromStr(toStr(new Date())));
+  const clientW=els[0].clientWidth;
+  let target=todayIdx*DAY_W - clientW*0.35;  // 今日をやや左寄りに置き、今後数日分も見えるように
+  target=Math.max(0, Math.min(target, els[0].scrollWidth-clientW));
+  els[0].scrollLeft=target;
+  els[1].scrollLeft=target;
   chartScrolledOnce=true;
 }
 // 過去〜未来の排卵イベントを推定（各生理開始の14日前＝直前周期の排卵、＋次回予測）
@@ -1335,6 +1372,11 @@ function getOvulationEvents() {
   for(let i=1;i<starts.length;i++) evs.push(addDays(fromStr(starts[i]),-14));
   const pred=getPredictions(); if(pred) evs.push(pred.ovulation);
   return evs;
+}
+// グラフ内で見える範囲の生理開始日（＝周期の区切り）を「周期1」「周期2」…とラベル付きで返す
+function cycleBoundaryMarks(start, n) {
+  return getPeriodStarts().map((ds,idx)=>({ i:daysBetween(start,fromStr(ds)), label:'周期'+(idx+1) }))
+    .filter(m=>m.i>=0 && m.i<n);
 }
 function drawChart() {
   const svgEl=document.getElementById('temp-chart');
@@ -1373,6 +1415,11 @@ function drawChart() {
     s+=`<line x1="${xS(i).toFixed(1)}" y1="${pT+cH-2}" x2="${xS(i).toFixed(1)}" y2="${pT+cH+2}" stroke="#F4A7B9" stroke-width="4" stroke-linecap="round"/>`;}}
   if(data.length>1)s+=`<path d="${data.map((p,i)=>`${i?'L':'M'}${xS(p.i).toFixed(1)},${yS(p.t).toFixed(1)}`).join(' ')}" stroke="#F4A7B9" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`;
   data.forEach(p=>s+=`<circle cx="${xS(p.i).toFixed(1)}" cy="${yS(p.t).toFixed(1)}" r="4" fill="${p.t>=hi?'#E85070':'#5090D8'}" stroke="white" stroke-width="1.5"/>`);
+  // ▼ 周期の区切り（生理開始日）：濃いピンクの実線＋ラベルで周期ごとに区分けして見える
+  cycleBoundaryMarks(start,n).forEach(m=>{
+    s+=`<line x1="${xS(m.i).toFixed(1)}" y1="${pT}" x2="${xS(m.i).toFixed(1)}" y2="${pT+cH}" stroke="#E85070" stroke-width="1" opacity="0.5"/>`;
+    s+=`<text x="${(xS(m.i)+3).toFixed(1)}" y="${pT+10}" font-size="7.5" fill="#E85070" font-weight="700">${m.label}</text>`;
+  });
   svgEl.setAttribute('width',W); svgEl.setAttribute('height',H); svgEl.setAttribute('viewBox',`0 0 ${W} ${H}`); svgEl.innerHTML=s;
   // 左端固定のY軸ラベル
   let a='';
@@ -1409,6 +1456,10 @@ function drawSleepChart() {
   // 睡眠の線＋点（前面）
   if(data.length>1)s+=`<path d="${data.map((p,i)=>`${i?'L':'M'}${xS(p.i).toFixed(1)},${yS(p.h).toFixed(1)}`).join(' ')}" stroke="#9C77C8" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`;
   data.forEach(p=>s+=`<circle cx="${xS(p.i).toFixed(1)}" cy="${yS(p.h).toFixed(1)}" r="3.5" fill="#9C77C8" stroke="white" stroke-width="1.5"/>`);
+  // ▼ 周期の区切り（体温グラフと合わせて表示）
+  cycleBoundaryMarks(start,n).forEach(m=>{
+    s+=`<line x1="${xS(m.i).toFixed(1)}" y1="${pT}" x2="${xS(m.i).toFixed(1)}" y2="${pT+cH}" stroke="#E85070" stroke-width="1" opacity="0.5"/>`;
+  });
   svgEl.setAttribute('width',W); svgEl.setAttribute('height',H); svgEl.setAttribute('viewBox',`0 0 ${W} ${H}`); svgEl.innerHTML=s;
   let a='';
   [0,3,6,9,12].forEach(h=>{a+=`<text x="22" y="${(yS(h)+3.5).toFixed(1)}" text-anchor="end" font-size="8" fill="#C8A8C0">${h}h</text>`;});
@@ -1449,8 +1500,9 @@ function renderTestTab() {
     pregEl.innerHTML='<div class="cycle-hint">生理日を記録すると、検査できる日を計算します 🌸</div>';
     lhEl.innerHTML='<div class="cycle-hint">生理日を記録すると、検査おすすめ日を計算します 🌸</div>';
   } else {
-    // 妊娠検査薬：早期タイプ＝生理予定日から / 一般＝生理予定日の1週間後から
-    const early=pred.nextPeriod, normal=addDays(pred.nextPeriod,7);
+    const pad=pred.pad||0;
+    // 妊娠検査薬：早期タイプ＝生理予定日から / 一般＝生理予定日の1週間後から（手動範囲の幅ぶん前後に広げる）
+    const early=addDays(pred.nextPeriod,-pad), normal=addDays(pred.nextPeriod,7+pad);
     const dE=daysBetween(new Date(),early), dN=daysBetween(new Date(),normal);
     const lab=n=>n>0?n+'日後':n===0?'今日！':Math.abs(n)+'日前';
     pregEl.innerHTML=`<div class="cycle-info-grid">
@@ -1458,8 +1510,8 @@ function renderTestTab() {
       <div class="ci-item"><span class="ci-label">一般の妊娠検査薬</span><span class="ci-value accent">${fmtDate(normal)}〜（${lab(dN)}）</span></div>
     </div>
     <div style="font-size:11px;color:var(--text-light);margin-top:8px;line-height:1.6;">早期タイプは生理予定日ごろ、一般タイプは生理予定日の1週間後からが目安です。フライング検査は結果が出にくいことがあります。</div>`;
-    // 排卵検査薬：排卵予測の5〜6日前から毎日検査
-    const lhStart=addDays(pred.ovulation,-6), lhEnd=addDays(pred.ovulation,-1);
+    // 排卵検査薬：排卵予測の5〜6日前から毎日検査（手動範囲の幅ぶん前倒しで開始）
+    const lhStart=addDays(pred.ovulation,-6-pad), lhEnd=addDays(pred.ovulation,-1+pad);
     const dL=daysBetween(new Date(),lhStart);
     lhEl.innerHTML=`<div class="cycle-info-grid">
       <div class="ci-item"><span class="ci-label">検査おすすめ期間</span><span class="ci-value" style="color:#C08020;">${fmtDate(lhStart)}〜${fmtDate(lhEnd)}</span></div>
@@ -1490,15 +1542,19 @@ function loadSettings() {
   document.getElementById('setting-period').value=appData.settings.periodLength;
   document.getElementById('setting-hightemp').value=appData.settings.highTemp||36.65;
   document.getElementById('setting-apikey').value=appData.settings.claudeApiKey||'';
+  document.getElementById('setting-cycle-min').value=appData.settings.cycleMin;
+  document.getElementById('setting-cycle-max').value=appData.settings.cycleMax;
 
   const mode=appData.settings.cycleMode||'auto';
   document.getElementById('cyclemode-auto').classList.toggle('on-good', mode==='auto');
   document.getElementById('cyclemode-manual').classList.toggle('on-good', mode==='manual');
-  document.getElementById('setting-cycle-label').textContent = mode==='manual' ? '生理周期（日）※これを予測に使用中' : '生理周期（日）の初期値';
+  document.getElementById('cycle-auto-row').style.display = mode==='manual' ? 'none' : '';
+  document.getElementById('cycle-manual-row').style.display = mode==='manual' ? '' : 'none';
 
   const starts=getPeriodStarts(), note=document.getElementById('cycle-auto-note');
   if(mode==='manual') {
-    note.textContent = `🖊 手動指定モード：実測データに関わらず、下で入力した周期（${appData.settings.cycleLength}日）で排卵日・生理予定日を予測します。周期が安定してきたら「自動」に戻すのがおすすめです。`;
+    const pad=getCyclePad();
+    note.textContent = `🖊 手動指定モード：実測データに関わらず、${getCycleRange().join('〜')}日の周期で予測します（中央値${getAvgCycle()}日、妊娠可能期間は前後${pad}日広めに表示）。周期が安定してきたら「自動」に戻すのがおすすめです。`;
   } else if(starts.length>=2) {
     note.textContent = `📊 生理記録が${starts.length}回分あるので、実際の周期（平均${getAvgCycle()}日）を自動で使っています。下の「初期値」は使われません。`;
   } else {
@@ -1511,6 +1567,11 @@ function saveSettings() {
   appData.settings.cycleLength=clamp(parseInt(document.getElementById('setting-cycle').value)||28, 20, 60);
   appData.settings.periodLength=clamp(parseInt(document.getElementById('setting-period').value)||5, 1, 14);
   appData.settings.highTemp=clamp(parseFloat(document.getElementById('setting-hightemp').value)||36.65, 36, 37.5);
+  // 最短・最長は片方ずつ入力→都度保存されるため、ここでは入れ替えない
+  // （途中経過の値どうしを比べて入れ替えると、2つ目を入れる前の値で誤って確定してしまうため）
+  // 大小の解釈は使う側（getCycleRange）でその都度行う
+  appData.settings.cycleMin=clamp(parseInt(document.getElementById('setting-cycle-min').value)||28, 20, 60);
+  appData.settings.cycleMax=clamp(parseInt(document.getElementById('setting-cycle-max').value)||28, 20, 60);
   loadSettings();  // クランプ後の値を入力欄に反映
   appData.settings.claudeApiKey=document.getElementById('setting-apikey').value.trim();
   persist(); showToast('設定を保存しました');
@@ -1570,7 +1631,7 @@ function importData() {
 }
 function clearData() {
   if(!confirm('全データを削除しますか？この操作は元に戻せません。'))return;
-  appData={periods:[],temperatures:{},memos:{},symptoms:{},meals:{},sleep:{},pregTests:{},lhTests:{},work:{},condition:{},settings:{cycleLength:28,periodLength:5,claudeApiKey:'',cycleMode:'auto'}};
+  appData={periods:[],temperatures:{},memos:{},symptoms:{},meals:{},sleep:{},pregTests:{},lhTests:{},work:{},condition:{},settings:{cycleLength:28,periodLength:5,claudeApiKey:'',cycleMode:'auto',cycleMin:28,cycleMax:28}};
   persist();renderCalendar();showToast('削除しました');
 }
 
