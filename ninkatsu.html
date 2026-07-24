@@ -413,8 +413,9 @@
     <div class="section-pad">
       <div class="card">
         <div class="card-title">⚙️ サイクル設定</div>
+        <p class="info-text" id="cycle-auto-note" style="margin-bottom:10px;"></p>
         <div class="settings-row">
-          <div class="settings-label">生理周期（日）</div>
+          <div class="settings-label">生理周期（日）<span style="font-weight:400;color:var(--text-light);">の初期値</span></div>
           <input type="number" id="setting-cycle" class="settings-input" min="20" max="45" onchange="saveSettings()" onfocus="this.select()">
         </div>
         <div class="settings-row">
@@ -1446,6 +1447,11 @@ function loadSettings() {
   document.getElementById('setting-period').value=appData.settings.periodLength;
   document.getElementById('setting-hightemp').value=appData.settings.highTemp||36.65;
   document.getElementById('setting-apikey').value=appData.settings.claudeApiKey||'';
+  // 生理を2回以上記録すると実測の周期が使われる。設定値との違いで混乱しないよう明示する
+  const starts=getPeriodStarts(), note=document.getElementById('cycle-auto-note');
+  note.textContent = starts.length>=2
+    ? `📊 生理記録が${starts.length}回分あるので、実際の周期（平均${getAvgCycle()}日）を自動で使っています。下の「初期値」は使われません。`
+    : '生理記録が2回分たまるまでは、下の初期値をもとに予測します。';
 }
 // 数字入力欄は既存の値に追記されて桁溢れしやすいため、保存時に必ず妥当な範囲へ収める
 const clamp=(v,lo,hi)=>Math.min(hi,Math.max(lo,v));
