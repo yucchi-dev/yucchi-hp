@@ -415,15 +415,15 @@
         <div class="card-title">⚙️ サイクル設定</div>
         <div class="settings-row">
           <div class="settings-label">生理周期（日）</div>
-          <input type="number" id="setting-cycle" class="settings-input" min="20" max="45" onchange="saveSettings()">
+          <input type="number" id="setting-cycle" class="settings-input" min="20" max="45" onchange="saveSettings()" onfocus="this.select()">
         </div>
         <div class="settings-row">
           <div class="settings-label">生理期間（日）</div>
-          <input type="number" id="setting-period" class="settings-input" min="1" max="10" onchange="saveSettings()">
+          <input type="number" id="setting-period" class="settings-input" min="1" max="10" onchange="saveSettings()" onfocus="this.select()">
         </div>
         <div class="settings-row">
           <div class="settings-label">高温期ライン（℃）</div>
-          <input type="number" id="setting-hightemp" class="settings-input" min="36" max="37.5" step="0.05" onchange="saveSettings()">
+          <input type="number" id="setting-hightemp" class="settings-input" min="36" max="37.5" step="0.05" onchange="saveSettings()" onfocus="this.select()">
         </div>
       </div>
       <div class="card">
@@ -1260,6 +1260,8 @@ function chartRange() {
   const pred=getPredictions();
   if(pred){const e=addDays(pred.nextPeriod,14); if(e>end) end=e;}
   start=addDays(start,-2);
+  // 安全弁：万一おかしな設定値が保存されていても、極端に長い期間を描画してアプリが固まらないようにする
+  if(end>addDays(today,400)) end=addDays(today,400);
   return {start, end, n:daysBetween(start,end)+1};
 }
 function renderTempTab() {
@@ -1445,10 +1447,13 @@ function loadSettings() {
   document.getElementById('setting-hightemp').value=appData.settings.highTemp||36.65;
   document.getElementById('setting-apikey').value=appData.settings.claudeApiKey||'';
 }
+// 数字入力欄は既存の値に追記されて桁溢れしやすいため、保存時に必ず妥当な範囲へ収める
+const clamp=(v,lo,hi)=>Math.min(hi,Math.max(lo,v));
 function saveSettings() {
-  appData.settings.cycleLength=parseInt(document.getElementById('setting-cycle').value)||28;
-  appData.settings.periodLength=parseInt(document.getElementById('setting-period').value)||5;
-  appData.settings.highTemp=parseFloat(document.getElementById('setting-hightemp').value)||36.65;
+  appData.settings.cycleLength=clamp(parseInt(document.getElementById('setting-cycle').value)||28, 20, 60);
+  appData.settings.periodLength=clamp(parseInt(document.getElementById('setting-period').value)||5, 1, 14);
+  appData.settings.highTemp=clamp(parseFloat(document.getElementById('setting-hightemp').value)||36.65, 36, 37.5);
+  loadSettings();  // クランプ後の値を入力欄に反映
   appData.settings.claudeApiKey=document.getElementById('setting-apikey').value.trim();
   persist(); showToast('設定を保存しました');
 }
