@@ -75,13 +75,8 @@
     .day-cell.sun .day-num{color:#FF5555;}.day-cell.sat .day-num{color:#5572EE;}
     .heart-mark{font-size:13px;color:#FF5580;line-height:1;}
     .day-icon-area{flex:1;display:flex;align-items:center;justify-content:center;}
-    .day-inds{display:flex;justify-content:center;align-items:center;gap:3px;padding-bottom:4px;min-height:10px;}
-    /* 記録ありを示す小さなドット（文字を置かずカレンダーをすっきり保つ） */
-    .rec-dot{width:5px;height:5px;border-radius:50%;display:inline-block;}
-    .rd-temp{background:#F4A7B9;}
-    .rd-memo{background:#9C77C8;}
-    .rd-sym{background:#E6B85C;}
-    .rd-test{background:#7FB5A8;}
+    /* 記録ありを示すアイコン列（文字は置かずカレンダーをすっきり保つ） */
+    .day-inds{display:flex;justify-content:center;align-items:center;gap:0;font-size:8.5px;line-height:1;padding:0 1px 3px;min-height:11px;letter-spacing:-0.5px;}
 
     /* Today ring */
     .day-cell.today{box-shadow:inset 0 0 0 2px var(--pink-400);}
@@ -327,10 +322,11 @@
       <div class="legend-item"><div class="legend-dot" style="background:#F3EEFF;border:1px solid #C8A8E0;"></div>PMS期間</div>
     </div>
     <div class="legend" style="padding-top:0;">
-      <div class="legend-item"><span class="rec-dot rd-temp"></span>体温</div>
-      <div class="legend-item"><span class="rec-dot rd-memo"></span>メモ</div>
-      <div class="legend-item"><span class="rec-dot rd-sym"></span>症状</div>
-      <div class="legend-item"><span class="rec-dot rd-test"></span>検査</div>
+      <div class="legend-item">🌡️ 体温</div>
+      <div class="legend-item">😴 睡眠</div>
+      <div class="legend-item">💊 症状</div>
+      <div class="legend-item">📝 メモ</div>
+      <div class="legend-item">🧪 検査</div>
     </div>
     <div id="cal-memos" class="cal-memo-section"></div>
   </div>
@@ -957,9 +953,10 @@ function renderCalendar() {
       const symsRaw=appData.symptoms[ds]||[];
       // 記録済みの🩵は右上バッジで表示（生理マークと重ならないように）
       const hasTiming=symsRaw.some(s=>normSym(s)==='🩵');
-      // カレンダーは「記録があるか」だけを小さな印で示す（中身はタップ or 下の一覧で読む）
+      // カレンダーは「記録があるか」だけをアイコンで示す（中身はタップ or 下の一覧で読む）
       const hasMemo=!!memoRaw;
       const hasSym=symsRaw.some(s=>normSym(s)!=='🩵');
+      const hasSleep=!!appData.sleep[ds];
 
       // Icon in center（ヨガ表示中はヨガ目安アイコンを優先）
       let icon='';
@@ -970,12 +967,13 @@ function renderCalendar() {
       else if (isPredPeriod) icon='<div class="moon-shape moon-pred"></div>';
       else if (isOv)         icon='<div class="ov-shape"></div>';
 
-      // 記録の有無を色つきドットで表示（🌡体温 📝メモ 💊症状 🧪検査）
+      // 記録の有無をアイコンで表示（中身はタップ or 下の一覧で読む）
       const dots=[
-        hasTemp?'<span class="rec-dot rd-temp"></span>':'',
-        hasMemo?'<span class="rec-dot rd-memo"></span>':'',
-        hasSym ?'<span class="rec-dot rd-sym"></span>':'',
-        hasTest?'<span class="rec-dot rd-test"></span>':'',
+        hasTemp?'🌡️':'',
+        hasSleep?'😴':'',
+        hasSym ?'💊':'',
+        hasMemo?'📝':'',
+        hasTest?'🧪':'',
       ].join('');
       html+=`<div class="day-cell ${phase}" style="${todayRing}" onclick="openDayModal('${ds}')">
         <div class="cell-top">
