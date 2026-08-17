@@ -75,8 +75,13 @@
     .day-cell.sun .day-num{color:#FF5555;}.day-cell.sat .day-num{color:#5572EE;}
     .heart-mark{font-size:13px;color:#FF5580;line-height:1;}
     .day-icon-area{flex:1;display:flex;align-items:center;justify-content:center;}
-    .day-inds{display:flex;justify-content:center;gap:1px;font-size:8px;padding-bottom:2px;min-height:10px;}
-    .cell-note{font-size:9.5px;line-height:1.3;padding:0 3px 1px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;word-break:break-all;color:var(--text-medium);}
+    .day-inds{display:flex;justify-content:center;align-items:center;gap:3px;padding-bottom:4px;min-height:10px;}
+    /* 記録ありを示す小さなドット（文字を置かずカレンダーをすっきり保つ） */
+    .rec-dot{width:5px;height:5px;border-radius:50%;display:inline-block;}
+    .rd-temp{background:#F4A7B9;}
+    .rd-memo{background:#9C77C8;}
+    .rd-sym{background:#E6B85C;}
+    .rd-test{background:#7FB5A8;}
 
     /* Today ring */
     .day-cell.today{box-shadow:inset 0 0 0 2px var(--pink-400);}
@@ -321,6 +326,12 @@
       <div class="legend-item"><span style="font-size:11px;color:#FF5580;">♥</span> 仲良しタイミング</div>
       <div class="legend-item"><div class="legend-dot" style="background:#F3EEFF;border:1px solid #C8A8E0;"></div>PMS期間</div>
     </div>
+    <div class="legend" style="padding-top:0;">
+      <div class="legend-item"><span class="rec-dot rd-temp"></span>体温</div>
+      <div class="legend-item"><span class="rec-dot rd-memo"></span>メモ</div>
+      <div class="legend-item"><span class="rec-dot rd-sym"></span>症状</div>
+      <div class="legend-item"><span class="rec-dot rd-test"></span>検査</div>
+    </div>
     <div id="cal-memos" class="cal-memo-section"></div>
   </div>
 
@@ -526,12 +537,12 @@
         <div class="sleep-row">
           <div class="sleep-field">
             <label>就寝</label>
-            <input type="time" id="modal-sleep-start" onfocus="prefillSleep(this,'zero')" oninput="updateSleepDur()">
+            <input type="time" id="modal-sleep-start" step="600" onfocus="prefillSleep(this,'zero')" oninput="updateSleepDur()">
           </div>
           <span class="sleep-tilde">〜</span>
           <div class="sleep-field">
             <label>起床</label>
-            <input type="time" id="modal-sleep-end" onfocus="prefillSleep(this,'now')" oninput="updateSleepDur()">
+            <input type="time" id="modal-sleep-end" step="600" onfocus="prefillSleep(this,'now')" oninput="updateSleepDur()">
           </div>
           <span class="sleep-dur" id="modal-sleep-dur"></span>
           <button class="sleep-clear" onclick="clearSleep()">✕ クリア</button>
@@ -542,16 +553,16 @@
         <div class="sleep-row">
           <div class="sleep-field">
             <label>出勤</label>
-            <input type="time" id="modal-work-start" onfocus="prefillSleep(this,'09:00')" oninput="updateWorkDur()">
+            <input type="time" id="modal-work-start" step="600" onfocus="prefillSleep(this,'09:00')" oninput="updateWorkDur()">
           </div>
           <span class="sleep-tilde">〜</span>
           <div class="sleep-field">
             <label>退勤</label>
-            <input type="time" id="modal-work-end" onfocus="prefillSleep(this,'now')" oninput="updateWorkDur()">
+            <input type="time" id="modal-work-end" step="600" onfocus="prefillSleep(this,'now')" oninput="updateWorkDur()">
           </div>
           <div class="sleep-field">
             <label>休憩(分)</label>
-            <input type="number" id="modal-work-break" value="60" min="0" step="5" style="width:70px;" oninput="updateWorkDur()">
+            <input type="number" id="modal-work-break" value="60" min="0" step="10" style="width:70px;" oninput="updateWorkDur()">
           </div>
           <span class="sleep-dur" id="modal-work-dur"></span>
           <button class="sleep-clear" onclick="clearWork()">✕ クリア</button>
@@ -729,11 +740,11 @@ function clearSleep() {
   document.getElementById('modal-sleep-end').value='';
   updateSleepDur();
 }
-// 空欄をタップしたときの基準値: 'now'→今の時刻（5分単位に丸め）/ 'zero'→0:00 / それ以外は指定時刻そのまま
+// 空欄をタップしたときの基準値: 'now'→今の時刻（10分単位に丸め）/ 'zero'→0:00 / それ以外は指定時刻そのまま
 function prefillSleep(inp,base) {
   if(inp.value) return;
   if(base==='now') {
-    const n=new Date(); let mins=Math.round((n.getHours()*60+n.getMinutes())/5)*5%1440;
+    const n=new Date(); let mins=Math.round((n.getHours()*60+n.getMinutes())/10)*10%1440;
     inp.value=String(Math.floor(mins/60)).padStart(2,'0')+':'+String(mins%60).padStart(2,'0');
   } else {
     inp.value = base==='zero' ? '00:00' : base;
@@ -946,12 +957,9 @@ function renderCalendar() {
       const symsRaw=appData.symptoms[ds]||[];
       // 記録済みの🩵は右上バッジで表示（生理マークと重ならないように）
       const hasTiming=symsRaw.some(s=>normSym(s)==='🩵');
-      // セル内テキスト: 睡眠＋（メモ優先、なければ症状名。🩵はバッジ表示済みなので除く）
-      // カレンダーは妊活情報に絞る（勤務・調子はグラフタブで見る）
-      const slp=appData.sleep[ds];
-      const slpTxt=slp?'😴'+sleepHours(slp.start,slp.end)+'h':'';
-      const noteBody=(memoRaw.replace(/\n/g,' ')||symsRaw.filter(s=>normSym(s)!=='🩵').map(s=>{const n=normSym(s);const p=n.split(' ');return p.length>1?p.slice(1).join(''):p[0];}).join(' ')).trim();
-      const cellNoteText=[slpTxt,noteBody].filter(Boolean).join(' ');
+      // カレンダーは「記録があるか」だけを小さな印で示す（中身はタップ or 下の一覧で読む）
+      const hasMemo=!!memoRaw;
+      const hasSym=symsRaw.some(s=>normSym(s)!=='🩵');
 
       // Icon in center（ヨガ表示中はヨガ目安アイコンを優先）
       let icon='';
@@ -962,15 +970,20 @@ function renderCalendar() {
       else if (isPredPeriod) icon='<div class="moon-shape moon-pred"></div>';
       else if (isOv)         icon='<div class="ov-shape"></div>';
 
-      const noteHtml=cellNoteText?`<div class="cell-note">${cellNoteText.replace(/&/g,'&amp;').replace(/</g,'&lt;')}</div>`:'';
+      // 記録の有無を色つきドットで表示（🌡体温 📝メモ 💊症状 🧪検査）
+      const dots=[
+        hasTemp?'<span class="rec-dot rd-temp"></span>':'',
+        hasMemo?'<span class="rec-dot rd-memo"></span>':'',
+        hasSym ?'<span class="rec-dot rd-sym"></span>':'',
+        hasTest?'<span class="rec-dot rd-test"></span>':'',
+      ].join('');
       html+=`<div class="day-cell ${phase}" style="${todayRing}" onclick="openDayModal('${ds}')">
         <div class="cell-top">
           <span class="day-num" style="color:${numCol};font-weight:${numW};">${day}</span>
           ${hasTiming?'<span class="heart-mark">🩵</span>':(isTiming&&!isPeriod?'<span class="heart-mark">♥</span>':'')}
         </div>
         <div class="day-icon-area">${icon}</div>
-        ${noteHtml}
-        <div class="day-inds">${hasTemp?'🌡':''}${hasTest?'🧪':''}</div>
+        <div class="day-inds">${dots}</div>
       </div>`;
     }
     html+='</div>';
