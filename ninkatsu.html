@@ -77,6 +77,8 @@
     .day-icon-area{flex:1;display:flex;align-items:center;justify-content:center;}
     /* 記録ありを示すアイコン列（文字は置かずカレンダーをすっきり保つ） */
     .day-inds{display:flex;justify-content:center;align-items:center;gap:0;font-size:8.5px;line-height:1;padding:0 1px 3px;min-height:11px;letter-spacing:-0.5px;}
+    /* カレンダーのマス目に睡眠時間を数値で表示 */
+    .cell-sleep{font-size:9.5px;font-weight:700;color:#8A6BB8;text-align:center;line-height:1;padding-bottom:2px;}
 
     /* Today ring */
     .day-cell.today{box-shadow:inset 0 0 0 2px var(--pink-400);}
@@ -240,6 +242,12 @@
     .sleep-tilde{font-size:14px;color:var(--text-medium);padding-bottom:11px;}
     .sleep-dur{font-size:13px;font-weight:700;color:var(--pink-500);padding-bottom:11px;}
     .sleep-clear{background:var(--bg);border:1.5px solid var(--pink-100);border-radius:10px;padding:8px 12px;font-size:12px;font-family:inherit;color:var(--text-medium);cursor:pointer;margin-bottom:1px;}
+    .sleep-now{background:var(--pink-50);border:1.5px solid var(--pink-200);border-radius:10px;padding:8px 12px;font-size:12px;font-weight:700;font-family:inherit;color:var(--pink-500);cursor:pointer;margin-bottom:1px;}
+    /* 時刻はプルダウン2つ（時／分）。分は10分刻み */
+    .time-sel{display:flex;align-items:center;gap:2px;}
+    .time-sel select{border:1.5px solid var(--pink-100);border-radius:10px;padding:9px 4px;font-size:16px;font-family:inherit;color:var(--text-dark);background:var(--bg);outline:none;appearance:none;text-align:center;text-align-last:center;min-width:52px;}
+    .time-sel select:focus{border-color:var(--pink-300);}
+    .time-sel span{font-size:15px;color:var(--text-medium);}
 
     /* Temp modal */
     .temp-modal-row{display:flex;align-items:center;gap:8px;}
@@ -322,8 +330,8 @@
       <div class="legend-item"><div class="legend-dot" style="background:#F3EEFF;border:1px solid #C8A8E0;"></div>PMS期間</div>
     </div>
     <div class="legend" style="padding-top:0;">
+      <div class="legend-item"><span style="color:#8A6BB8;font-weight:700;">7.5h</span> 睡眠</div>
       <div class="legend-item">🌡️ 体温</div>
-      <div class="legend-item">😴 睡眠</div>
       <div class="legend-item">💊 症状</div>
       <div class="legend-item">📝 メモ</div>
       <div class="legend-item">🧪 検査</div>
@@ -533,13 +541,18 @@
         <div class="sleep-row">
           <div class="sleep-field">
             <label>就寝</label>
-            <input type="time" id="modal-sleep-start" step="600" onfocus="prefillSleep(this,'zero')" oninput="updateSleepDur()">
+            <div class="time-sel">
+              <select id="modal-sleep-start-h" onchange="updateSleepDur()"></select><span>:</span><select id="modal-sleep-start-m" onchange="updateSleepDur()"></select>
+            </div>
           </div>
           <span class="sleep-tilde">〜</span>
           <div class="sleep-field">
             <label>起床</label>
-            <input type="time" id="modal-sleep-end" step="600" onfocus="prefillSleep(this,'now')" oninput="updateSleepDur()">
+            <div class="time-sel">
+              <select id="modal-sleep-end-h" onchange="updateSleepDur()"></select><span>:</span><select id="modal-sleep-end-m" onchange="updateSleepDur()"></select>
+            </div>
           </div>
+          <button class="sleep-now" onclick="setNowTime('modal-sleep-end',updateSleepDur)">今</button>
           <span class="sleep-dur" id="modal-sleep-dur"></span>
           <button class="sleep-clear" onclick="clearSleep()">✕ クリア</button>
         </div>
@@ -549,13 +562,18 @@
         <div class="sleep-row">
           <div class="sleep-field">
             <label>出勤</label>
-            <input type="time" id="modal-work-start" step="600" onfocus="prefillSleep(this,'09:00')" oninput="updateWorkDur()">
+            <div class="time-sel">
+              <select id="modal-work-start-h" onchange="updateWorkDur()"></select><span>:</span><select id="modal-work-start-m" onchange="updateWorkDur()"></select>
+            </div>
           </div>
           <span class="sleep-tilde">〜</span>
           <div class="sleep-field">
             <label>退勤</label>
-            <input type="time" id="modal-work-end" step="600" onfocus="prefillSleep(this,'now')" oninput="updateWorkDur()">
+            <div class="time-sel">
+              <select id="modal-work-end-h" onchange="updateWorkDur()"></select><span>:</span><select id="modal-work-end-m" onchange="updateWorkDur()"></select>
+            </div>
           </div>
+          <button class="sleep-now" onclick="setNowTime('modal-work-end',updateWorkDur)">今</button>
           <div class="sleep-field">
             <label>休憩(分)</label>
             <input type="number" id="modal-work-break" value="60" min="0" step="10" style="width:70px;" oninput="updateWorkDur()">
@@ -726,26 +744,44 @@ function sleepHours(start,end) {
   return Math.round(mins/60*10)/10;
 }
 function fmtSleepTime(t){ const [h,m]=t.split(':'); return m==='00'?parseInt(h)+'時':parseInt(h)+'時'+m+'分'; }
+/* 時刻はプルダウン式（iOSの時刻ピッカーはstep属性を無視して1分刻みになるため）。分は10分単位 */
+const TIME_STEP=10;
+const TIME_SEL_BASES=['modal-sleep-start','modal-sleep-end','modal-work-start','modal-work-end'];
+function fillTimeSelects() {
+  TIME_SEL_BASES.forEach(base=>{
+    const hs=document.getElementById(base+'-h'), ms=document.getElementById(base+'-m');
+    if(!hs||hs.options.length) return;   // 既に生成済みなら何もしない
+    hs.innerHTML='<option value="">--</option>'+Array.from({length:24},(_,h)=>`<option value="${String(h).padStart(2,'0')}">${h}</option>`).join('');
+    ms.innerHTML='<option value="">--</option>'+Array.from({length:60/TIME_STEP},(_,i)=>{const m=String(i*TIME_STEP).padStart(2,'0');return `<option value="${m}">${m}</option>`;}).join('');
+  });
+}
+// 時・分そろって選ばれている時だけ "HH:MM" を返す
+function getTimeVal(base) {
+  const h=document.getElementById(base+'-h').value, m=document.getElementById(base+'-m').value;
+  return (h&&m) ? h+':'+m : '';
+}
+function setTimeVal(base,val) {
+  const hs=document.getElementById(base+'-h'), ms=document.getElementById(base+'-m');
+  if(!val){ hs.value=''; ms.value=''; return; }
+  const [h,m]=val.split(':');
+  hs.value=h;
+  // 保存済みの分が10分刻みでない場合も選べるよう、必要なら選択肢を足す
+  if(!ms.querySelector(`option[value="${m}"]`)) ms.insertAdjacentHTML('beforeend',`<option value="${m}">${m}</option>`);
+  ms.value=m;
+}
+// 「今」ボタン：現在時刻を10分単位に丸めて入れる（自動では入れない＝意図しない記録を防ぐ）
+function setNowTime(base,after) {
+  const n=new Date(); const mins=Math.round((n.getHours()*60+n.getMinutes())/TIME_STEP)*TIME_STEP%1440;
+  setTimeVal(base,String(Math.floor(mins/60)).padStart(2,'0')+':'+String(mins%60).padStart(2,'0'));
+  if(after) after();
+}
 function updateSleepDur() {
-  const s=document.getElementById('modal-sleep-start').value, e=document.getElementById('modal-sleep-end').value;
-  const h=sleepHours(s,e);
+  const h=sleepHours(getTimeVal('modal-sleep-start'),getTimeVal('modal-sleep-end'));
   document.getElementById('modal-sleep-dur').textContent=h!=null?h+'時間':'';
 }
 function clearSleep() {
-  document.getElementById('modal-sleep-start').value='';
-  document.getElementById('modal-sleep-end').value='';
+  setTimeVal('modal-sleep-start',''); setTimeVal('modal-sleep-end','');
   updateSleepDur();
-}
-// 空欄をタップしたときの基準値: 'now'→今の時刻（10分単位に丸め）/ 'zero'→0:00 / それ以外は指定時刻そのまま
-function prefillSleep(inp,base) {
-  if(inp.value) return;
-  if(base==='now') {
-    const n=new Date(); let mins=Math.round((n.getHours()*60+n.getMinutes())/10)*10%1440;
-    inp.value=String(Math.floor(mins/60)).padStart(2,'0')+':'+String(mins%60).padStart(2,'0');
-  } else {
-    inp.value = base==='zero' ? '00:00' : base;
-  }
-  updateSleepDur(); updateWorkDur();
 }
 /* ===== WORK & CONDITION（復職サポート）===== */
 // 正味の勤務時間 = (退勤-出勤) - 休憩。マイナスにはしない
@@ -754,15 +790,12 @@ function workNetHours(wk) {
   return Math.max(0, Math.round((h-(wk.break||0)/60)*10)/10);
 }
 function updateWorkDur() {
-  const s=document.getElementById('modal-work-start'), e=document.getElementById('modal-work-end');
-  if(!s||!e) return;
   const br=parseInt(document.getElementById('modal-work-break').value)||0;
-  const h=workNetHours({start:s.value,end:e.value,break:br});
+  const h=workNetHours({start:getTimeVal('modal-work-start'),end:getTimeVal('modal-work-end'),break:br});
   document.getElementById('modal-work-dur').textContent=h!=null?'実働'+h+'時間':'';
 }
 function clearWork() {
-  document.getElementById('modal-work-start').value='';
-  document.getElementById('modal-work-end').value='';
+  setTimeVal('modal-work-start',''); setTimeVal('modal-work-end','');
   document.getElementById('modal-work-break').value='60';
   updateWorkDur();
 }
@@ -967,10 +1000,11 @@ function renderCalendar() {
       else if (isPredPeriod) icon='<div class="moon-shape moon-pred"></div>';
       else if (isOv)         icon='<div class="ov-shape"></div>';
 
-      // 記録の有無をアイコンで表示（中身はタップ or 下の一覧で読む）
+      // 睡眠は時間そのものを表示、それ以外は記録ありをアイコンで示す
+      const slpH=hasSleep?sleepHours(appData.sleep[ds].start,appData.sleep[ds].end):null;
+      const sleepHtml=slpH!=null?`<div class="cell-sleep">${slpH}h</div>`:'';
       const dots=[
         hasTemp?'🌡️':'',
-        hasSleep?'😴':'',
         hasSym ?'💊':'',
         hasMemo?'📝':'',
         hasTest?'🧪':'',
@@ -981,6 +1015,7 @@ function renderCalendar() {
           ${hasTiming?'<span class="heart-mark">🩵</span>':(isTiming&&!isPeriod?'<span class="heart-mark">♥</span>':'')}
         </div>
         <div class="day-icon-area">${icon}</div>
+        ${sleepHtml}
         <div class="day-inds">${dots}</div>
       </div>`;
     }
@@ -1055,12 +1090,13 @@ function openDayModal(ds) {
   updatePeriodBtns(appData.periods.includes(ds));
   document.getElementById('modal-temp').value=appData.temperatures[ds]?appData.temperatures[ds].toFixed(2):'';
   const slp=appData.sleep[ds]||{};
-  document.getElementById('modal-sleep-start').value=slp.start||'';
-  document.getElementById('modal-sleep-end').value=slp.end||'';
+  fillTimeSelects();
+  setTimeVal('modal-sleep-start',slp.start||'');
+  setTimeVal('modal-sleep-end',slp.end||'');
   updateSleepDur();
   const wk=appData.work[ds]||{};
-  document.getElementById('modal-work-start').value=wk.start||'';
-  document.getElementById('modal-work-end').value=wk.end||'';
+  setTimeVal('modal-work-start',wk.start||'');
+  setTimeVal('modal-work-end',wk.end||'');
   document.getElementById('modal-work-break').value=wk.break!=null?wk.break:60;
   updateWorkDur();
   selCondition=appData.condition[ds]||null;
@@ -1108,9 +1144,9 @@ function saveDay() {
   if(!selDate) return;
   const tv=parseFloat(document.getElementById('modal-temp').value);
   if(!isNaN(tv)&&tv>=35&&tv<=40) appData.temperatures[selDate]=tv; else delete appData.temperatures[selDate];
-  const ss=document.getElementById('modal-sleep-start').value, se=document.getElementById('modal-sleep-end').value;
+  const ss=getTimeVal('modal-sleep-start'), se=getTimeVal('modal-sleep-end');
   if(ss&&se) appData.sleep[selDate]={start:ss,end:se}; else delete appData.sleep[selDate];
-  const ws=document.getElementById('modal-work-start').value, we=document.getElementById('modal-work-end').value;
+  const ws=getTimeVal('modal-work-start'), we=getTimeVal('modal-work-end');
   const wb=parseInt(document.getElementById('modal-work-break').value)||0;
   if(ws&&we) appData.work[selDate]={start:ws,end:we,break:wb}; else delete appData.work[selDate];
   if(selCondition) appData.condition[selDate]=selCondition; else delete appData.condition[selDate];
