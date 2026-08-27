@@ -376,8 +376,8 @@
       <div class="card">
         <div class="card-title">🌡 基礎体温の推移（← 横にスワイプ →）</div>
         <div class="chart-scroll-wrap">
-          <svg id="temp-axis" width="34" height="180"></svg>
-          <div class="chart-scroll" id="temp-scroll"><svg id="temp-chart" height="180"></svg></div>
+          <svg id="temp-axis" width="34" height="230"></svg>
+          <div class="chart-scroll" id="temp-scroll"><svg id="temp-chart" height="230"></svg></div>
         </div>
         <div class="legend" style="padding:6px 2px 0;">
           <div class="legend-item"><span style="width:10px;height:10px;border-radius:50%;background:#E85070;display:inline-block;"></span>高温期側</div>
@@ -1428,15 +1428,25 @@ function cycleBoundaryMarks(start, n) {
   return getPeriodStarts().map((ds,idx)=>({ i:daysBetween(start,fromStr(ds)), label:'周期'+(idx+1) }))
     .filter(m=>m.i>=0 && m.i<n);
 }
+// 体温グラフの縦軸レンジ：実データに合わせて拡大し、高温期／低温期の差をはっきり見せる
+function tempScale(data, hi) {
+  let lo=hi-0.4, up=hi+0.4;                       // 境界線の上下は最低限確保
+  if(data.length){ const ts=data.map(p=>p.t); lo=Math.min(lo,...ts); up=Math.max(up,...ts); }
+  lo=Math.floor((lo-0.1)*10)/10; up=Math.ceil((up+0.1)*10)/10;
+  if(up-lo<0.8){ const c=(up+lo)/2; lo=Math.round((c-0.4)*10)/10; up=Math.round((c+0.4)*10)/10; }
+  return [lo,up];
+}
 function drawChart() {
   const svgEl=document.getElementById('temp-chart');
   const {start,end,n}=chartRange();
-  const H=180, pT=12,pB=28, cH=H-pT-pB, W=n*DAY_W;
-  const minT=35.5,maxT=37.5, todayStr=toStr(new Date());
-  const hi=parseFloat(appData.settings.highTemp)||36.65;  // 高温期ライン（設定で変更可）
-  const ticks=[...new Set([35.5,36.0,36.5,37.0,37.5,hi])].sort();
+  const H=230, pT=12,pB=28, cH=H-pT-pB, W=n*DAY_W;
+  const todayStr=toStr(new Date());
+  const hi=parseFloat(appData.settings.highTemp)||36.65;  // 高温期の境目（設定で変更可）
   const data=[];
   for(let i=0;i<n;i++){ const t=appData.temperatures[toStr(addDays(start,i))]; if(t!=null) data.push({i,t}); }
+  const [minT,maxT]=tempScale(data,hi);
+  // 0.1℃ごとに目盛り（ラベルは0.2℃ごと）
+  const ticks=[]; for(let v=Math.round(minT*10); v<=Math.round(maxT*10); v++) ticks.push(v/10);
   const idxOf=d=>daysBetween(start,fromStr(toStr(d)));
   const xS=i=>i*DAY_W+DAY_W/2, yS=t=>pT+(1-(t-minT)/(maxT-minT))*cH;
   let s='';
@@ -1449,7 +1459,7 @@ function drawChart() {
     if(fe<0||fs>n-1) return;
     s+=`<rect x="${(fs*DAY_W).toFixed(1)}" y="${pT}" width="${((fe-fs+1)*DAY_W).toFixed(1)}" height="${cH}" fill="#FFF6D6" opacity="0.75"/>`;
   });
-  ticks.forEach(t=>{const y=yS(t),base=t===hi;s+=`<line x1="0" y1="${y}" x2="${W}" y2="${y}" stroke="${base?'#FFB3D1':'#F0D8E8'}" stroke-width="${base?1.5:.5}" stroke-dasharray="${base?'4,3':''}"/>`;});
+  ticks.forEach(t=>{const lbl=Math.round(t*10)%2===0;s+=`<line x1="0" y1="${yS(t)}" x2="${W}" y2="${yS(t)}" stroke="#F0D8E8" stroke-width="${lbl?0.7:0.4}"/>`;});
   // ▼ 排卵予測日：オレンジの縦線
   getOvulationEvents().forEach(ov=>{ const i=idxOf(ov); if(i<0||i>n-1) return;
     s+=`<line x1="${xS(i).toFixed(1)}" y1="${pT}" x2="${xS(i).toFixed(1)}" y2="${pT+cH}" stroke="#F0A020" stroke-width="1.5" stroke-dasharray="3,2"/>`;});
@@ -1473,7 +1483,7 @@ function drawChart() {
   svgEl.setAttribute('width',W); svgEl.setAttribute('height',H); svgEl.setAttribute('viewBox',`0 0 ${W} ${H}`); svgEl.innerHTML=s;
   // 左端固定のY軸ラベル
   let a='';
-  ticks.forEach(t=>{a+=`<text x="30" y="${(yS(t)+3.5).toFixed(1)}" text-anchor="end" font-size="8" fill="${t===hi?'#E06898':'#C8A8C0'}" font-weight="${t===hi?'700':'400'}">${t.toFixed(2).replace(/0$/,'')}</text>`;});
+  ticks.filter(t=>Math.round(t*10)%2===0).forEach(t=>{a+=`<text x="30" y="${(yS(t)+3.5).toFixed(1)}" text-anchor="end" font-size="8" fill="#C8A8C0">${t.toFixed(1)}</text>`;});
   document.getElementById('temp-axis').innerHTML=a;
 }
 // 睡眠（紫の線）＋勤務（青の棒・実働）＋調子（上部の顔）を1枚に。どちらも時間なので同じ0〜12hの軸
