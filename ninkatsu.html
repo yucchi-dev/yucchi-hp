@@ -57,6 +57,10 @@
     .ci-value{font-size:14.5px;font-weight:700;color:var(--text-dark);}
     .ci-value.accent{color:var(--pink-500);}
     .ci-value.pms-color{color:#9060C0;}
+    /* 次の通院予定バナー（予定がある時だけ表示） */
+    .clinic-banner{margin:0 12px 10px;background:#EAF4F1;border:1.5px solid #A8D0C4;border-radius:12px;padding:9px 13px;display:flex;align-items:center;gap:8px;font-size:13px;color:#2F6E5E;cursor:pointer;}
+    .clinic-banner b{font-weight:700;}
+    .clinic-banner .cb-when{margin-left:auto;font-size:12px;font-weight:700;color:#3F8A76;white-space:nowrap;}
     .cycle-hint{font-size:12.5px;color:var(--text-light);text-align:center;padding:4px 0;}
 
     /* Calendar grid */
@@ -316,6 +320,7 @@
       </div>
     </div>
     <div id="cycle-info-box" class="cycle-info-box"></div>
+    <div id="clinic-next"></div>
     <div class="dow-header">
       <div class="dow-label">日</div><div class="dow-label">月</div><div class="dow-label">火</div>
       <div class="dow-label">水</div><div class="dow-label">木</div><div class="dow-label">金</div>
@@ -1026,10 +1031,31 @@ function renderCalendar() {
   }
   document.getElementById('calendar-grid').innerHTML=html;
   renderCalMemos(year, month);
+  renderClinicBanner();
   renderCycleHistory();
 }
 
 // 生理開始日どうしの間隔を古い順に一覧表示（全期間・月をまたいで通し）
+// 未来（今日以降）に🏥通院が記録されている最も近い日＝次の通院予定
+function getNextClinic() {
+  const today=toStr(new Date());
+  return Object.keys(appData.symptoms)
+    .filter(ds=>ds>=today && (appData.symptoms[ds]||[]).includes('🏥 通院'))
+    .sort()[0] || null;
+}
+function renderClinicBanner() {
+  const el=document.getElementById('clinic-next'); if(!el) return;
+  const ds=getNextClinic();
+  if(!ds){ el.innerHTML=''; return; }
+  const d=fromStr(ds), n=daysBetween(fromStr(toStr(new Date())),d);
+  const when = n===0?'今日':n===1?'明日':'あと'+n+'日';
+  const memo=(appData.memos[ds]||'').split('\n')[0];
+  el.innerHTML=`<div class="clinic-banner" onclick="openDayModal('${ds}')">
+    <span>🏥</span>
+    <span><b>次の通院 ${d.getMonth()+1}月${d.getDate()}日（${WEEKDAYS[d.getDay()]}）</b>${memo?'<br><span style="font-size:11px;opacity:.85;">'+memo.replace(/&/g,'&amp;').replace(/</g,'&lt;')+'</span>':''}</span>
+    <span class="cb-when">${when}</span>
+  </div>`;
+}
 function renderCycleHistory() {
   const starts=getPeriodStarts(), el=document.getElementById('cycle-history');
   if(!el) return;
