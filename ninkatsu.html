@@ -332,6 +332,7 @@
     <div class="legend" style="padding-top:0;">
       <div class="legend-item"><span style="color:#8A6BB8;font-weight:700;">7.5h</span> 睡眠</div>
       <div class="legend-item">🌡️ 体温</div>
+      <div class="legend-item">🏥 通院</div>
       <div class="legend-item">💊 症状</div>
       <div class="legend-item">📝 メモ</div>
       <div class="legend-item">🧪 検査</div>
@@ -670,7 +671,7 @@
 
 <script>
 /* ===== CONSTANTS ===== */
-const SYMPTOMS = ['🩹 腹痛','🤕 頭痛','🫠 倦怠感','😵‍💫 めまい','😴 眠気','😤 イライラ','💧 おりもの多','🤢 吐き気','😰 むくみ','🩵','🌙 不眠','🍫 食欲増','🥶 冷え','💦 おりもの少'];
+const SYMPTOMS = ['🏥 通院','🩹 腹痛','🤕 頭痛','🫠 倦怠感','😵‍💫 めまい','😴 眠気','😤 イライラ','💧 おりもの多','🤢 吐き気','😰 むくみ','🩵','🌙 不眠','🍫 食欲増','🥶 冷え','💦 おりもの少'];
 // 旧データ互換: '💕 性交あり' / '💕' → '🩵' に正規化して表示
 function normSym(s){ return (s==='💕 性交あり'||s==='💕')?'🩵':s; }
 const WEEKDAYS = ['日','月','火','水','木','金','土'];
@@ -988,7 +989,8 @@ function renderCalendar() {
       const hasTiming=symsRaw.some(s=>normSym(s)==='🩵');
       // カレンダーは「記録があるか」だけをアイコンで示す（中身はタップ or 下の一覧で読む）
       const hasMemo=!!memoRaw;
-      const hasSym=symsRaw.some(s=>normSym(s)!=='🩵');
+      const hasClinic=symsRaw.includes('🏥 通院');
+      const hasSym=symsRaw.some(s=>normSym(s)!=='🩵'&&s!=='🏥 通院');
       const hasSleep=!!appData.sleep[ds];
 
       // Icon in center（ヨガ表示中はヨガ目安アイコンを優先）
@@ -1005,6 +1007,7 @@ function renderCalendar() {
       const sleepHtml=slpH!=null?`<div class="cell-sleep">${slpH}h</div>`:'';
       const dots=[
         hasTemp?'🌡️':'',
+        hasClinic?'🏥':'',
         hasSym ?'💊':'',
         hasMemo?'📝':'',
         hasTest?'🧪':'',
