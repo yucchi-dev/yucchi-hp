@@ -849,12 +849,20 @@ function getCyclePad() {
   const [lo,hi]=getCycleRange();
   return Math.max(0, Math.round((hi-lo)/2));
 }
-function getPredictions() {
-  const starts=getPeriodStarts(); if(!starts.length) return null;
-  const last=fromStr(starts[starts.length-1]); const cycle=getAvgCycle(); const pad=getCyclePad();
-  const nextPeriod=addDays(last,cycle); const ovulation=addDays(nextPeriod,-14);
-  return { nextPeriod, ovulation, cycle, pad, fertileStart:addDays(ovulation,-5-pad), fertileEnd:addDays(ovulation,+3+pad) };
+// 先の周期まで予測を並べる（1番目=次の周期、2番目=その次…）。
+// 先の周期ほど予測誤差が積み上がるため、幅(pad)を周期数に応じて広げる
+function getPredictionsList(n=3) {
+  const starts=getPeriodStarts(); if(!starts.length) return [];
+  const last=fromStr(starts[starts.length-1]); const cycle=getAvgCycle(); const basePad=getCyclePad();
+  const list=[];
+  for(let i=1;i<=n;i++){
+    const pad=Math.min(basePad+(i-1), 7);   // 先の周期ほど1日ずつ広げるが、広すぎて意味を失わないよう上限を設ける
+    const nextPeriod=addDays(last,cycle*i); const ovulation=addDays(nextPeriod,-14);
+    list.push({ nextPeriod, ovulation, cycle, pad, fertileStart:addDays(ovulation,-5-pad), fertileEnd:addDays(ovulation,+3+pad) });
+  }
+  return list;
 }
+function getPredictions() { return getPredictionsList(1)[0]||null; }
 
 /* ===== APP STATE ===== */
 let calViewDate   = new Date();
@@ -912,7 +920,7 @@ function fmtDate(d) {
 
 function renderCalendar() {
   const year=calViewDate.getFullYear(), month=calViewDate.getMonth();
-  const today=toStr(new Date()), pred=getPredictions();
+  const today=toStr(new Date()), pred=getPredictions(), preds=getPredictionsList(3);
   document.getElementById('month-title').textContent=year+'年'+(month+1)+'月';
 
   /* ── Info box ── */
@@ -964,24 +972,24 @@ function renderCalendar() {
       const isPeriod=appData.periods.includes(ds);
       const isToday=ds===today;
 
-      // Phase detection
-      let phase='', isOv=false, isTiming=false, isPMS=false, isPredPeriod=false;
-      if (pred) {
-        const predEnd=addDays(pred.nextPeriod, appData.settings.periodLength-1);
-        isPredPeriod = !isPeriod && d>=pred.nextPeriod && d<=predEnd;
-        isOv   = !isPeriod && toStr(pred.ovulation)===ds;
-        isTiming = !isPeriod && d>=addDays(pred.ovulation,-1-(pred.pad||0)) && d<=addDays(pred.ovulation,3+(pred.pad||0));
-        const isFert = !isPeriod && d>=pred.fertileStart && d<=pred.fertileEnd;
-        isPMS  = !isPeriod && !isPredPeriod && d>=addDays(pred.nextPeriod,-7) && d<pred.nextPeriod;
-
-        if      (isPeriod)     phase='ph-period';
-        else if (isPredPeriod) phase='ph-predicted';
-        else if (isOv)         phase='ph-ovulation';
-        else if (isFert)       phase='ph-fertile';
-        else if (isPMS)        phase='ph-pms';
-      } else if (isPeriod) {
-        phase='ph-period';
+      // Phase detection（3周期先までの予測をすべて重ねて判定）
+      let phase='', isOv=false, isTiming=false, isPMS=false, isPredPeriod=false, isFert=false;
+      if (preds.length && !isPeriod) {
+        for(const pr of preds){
+          const predEnd=addDays(pr.nextPeriod, appData.settings.periodLength-1);
+          if(d>=pr.nextPeriod && d<=predEnd) isPredPeriod=true;
+          if(toStr(pr.ovulation)===ds) isOv=true;
+          if(d>=addDays(pr.ovulation,-1-(pr.pad||0)) && d<=addDays(pr.ovulation,3+(pr.pad||0))) isTiming=true;
+          if(d>=pr.fertileStart && d<=pr.fertileEnd) isFert=true;
+          if(d>=addDays(pr.nextPeriod,-7) && d<pr.nextPeriod) isPMS=true;
+        }
+        if(isPredPeriod) isPMS=false;
       }
+      if      (isPeriod)     phase='ph-period';
+      else if (isPredPeriod) phase='ph-predicted';
+      else if (isOv)         phase='ph-ovulation';
+      else if (isFert)       phase='ph-fertile';
+      else if (isPMS)        phase='ph-pms';
 
       const numCol = isPeriod?'#C03030': isToday?'var(--pink-500)': dow===0?'#FF5555': dow===6?'#5572EE':'var(--text-dark)';
       const numW   = (isPeriod||isToday)?'700':'500';
@@ -1408,8 +1416,8 @@ function chartRange() {
   let start=addDays(today,-34), end=addDays(today,7);
   const keys=[...Object.keys(appData.temperatures),...Object.keys(appData.sleep),...Object.keys(appData.work),...appData.periods].sort();
   if(keys.length&&fromStr(keys[0])<start) start=fromStr(keys[0]);
-  const pred=getPredictions();
-  if(pred){const e=addDays(pred.nextPeriod,14); if(e>end) end=e;}
+  const preds=getPredictionsList(3);
+  if(preds.length){const e=addDays(preds[preds.length-1].nextPeriod,7); if(e>end) end=e;}
   start=addDays(start,-2);
   // 安全弁：万一おかしな設定値が保存されていても、極端に長い期間を描画してアプリが固まらないようにする
   if(end>addDays(today,400)) end=addDays(today,400);
@@ -1445,11 +1453,11 @@ function scrollChartsToToday() {
   els[1].scrollLeft=target;
   chartScrolledOnce=true;
 }
-// 過去〜未来の排卵イベントを推定（各生理開始の14日前＝直前周期の排卵、＋次回予測）
+// 過去〜未来の排卵イベントを推定（各生理開始の14日前＝直前周期の排卵、＋3周期先までの予測）
 function getOvulationEvents() {
   const starts=getPeriodStarts(), evs=[];
   for(let i=1;i<starts.length;i++) evs.push(addDays(fromStr(starts[i]),-14));
-  const pred=getPredictions(); if(pred) evs.push(pred.ovulation);
+  getPredictionsList(3).forEach(pr=>evs.push(pr.ovulation));
   return evs;
 }
 // グラフ内で見える範囲の生理開始日（＝周期の区切り）を「周期1」「周期2」…とラベル付きで返す
